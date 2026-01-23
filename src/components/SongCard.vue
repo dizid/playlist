@@ -1,5 +1,7 @@
 <script setup>
+import { ref } from 'vue'
 import { useLibraryStore } from '../stores/library'
+import GenreMoodEditor from './GenreMoodEditor.vue'
 
 const props = defineProps({
   song: {
@@ -9,6 +11,7 @@ const props = defineProps({
 })
 
 const library = useLibraryStore()
+const showTagEditor = ref(false)
 
 function playOnYouTube() {
   window.open(`https://www.youtube.com/watch?v=${props.song.youtube_id}`, '_blank')
@@ -58,6 +61,12 @@ const ratingOptions = [
         <span v-if="song.genres?.length" class="text-zinc-500">
           {{ song.genres.slice(0, 2).join(', ') }}
         </span>
+        <button
+          @click="showTagEditor = true"
+          class="text-indigo-400 hover:text-indigo-300"
+        >
+          {{ song.genres?.length || song.moods?.length ? 'edit tags' : '+ add tags' }}
+        </button>
       </div>
     </div>
 
@@ -85,5 +94,12 @@ const ratingOptions = [
         <path d="M8 5v14l11-7z"/>
       </svg>
     </button>
+
+    <!-- Tag Editor Modal -->
+    <GenreMoodEditor
+      v-if="showTagEditor"
+      :song="song"
+      @close="showTagEditor = false"
+    />
   </div>
 </template>

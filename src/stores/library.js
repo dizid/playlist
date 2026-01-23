@@ -8,6 +8,7 @@ export const useLibraryStore = defineStore('library', () => {
   const playlists = ref([])
   const isLoading = ref(false)
   const error = ref(null)
+  const enrichmentStatus = ref({ pending: 0, completed: 0, failed: 0, manual: 0, total: 0 })
 
   // Getters
   const songCount = computed(() => songs.value.length)
@@ -17,6 +18,20 @@ export const useLibraryStore = defineStore('library', () => {
       .sort((a, b) => b.popularity - a.popularity)
       .slice(0, 50)
   )
+
+  // Unique genres across all songs
+  const availableGenres = computed(() => {
+    const genres = new Set()
+    songs.value.forEach(s => s.genres?.forEach(g => genres.add(g)))
+    return Array.from(genres).sort()
+  })
+
+  // Unique moods across all songs
+  const availableMoods = computed(() => {
+    const moods = new Set()
+    songs.value.forEach(s => s.moods?.forEach(m => moods.add(m)))
+    return Array.from(moods).sort()
+  })
 
   // Actions
   async function fetchSongs() {
@@ -133,16 +148,64 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
+  async function updateSongTags(songId, { genres, moods }) {
+    try {
+      await api.updateSongTags(songId, { genres, moods })
+
+      const song = songs.value.find(s => s.id === songId)
+      if (song) {
+        song.genres = genres
+        song.moods = moods
+        song.enrichment_status = 'manual'
+      }
+    } catch (e) {
+      error.value = e.message
+      throw e
+    }
+  }
+
+  async function enrichSongs(options = {}) {
+    try {
+      const result = await api.enrichSongs(options)
+
+      // Refetch songs to get updated genres/moods
+      if (result.enriched > 0) {
+        await fetchSongs()
+      }
+
+      // Update enrichment status
+      await fetchEnrichmentStatus()
+
+      return result
+    } catch (e) {
+      error.value = e.message
+      throw e
+    }
+  }
+
+  async function fetchEnrichmentStatus() {
+    try {
+      const status = await api.getEnrichmentStatus()
+      enrichmentStatus.value = status
+      return status
+    } catch (e) {
+      console.error('Failed to fetch enrichment status:', e)
+    }
+  }
+
   return {
     // State
     songs,
     playlists,
     isLoading,
     error,
+    enrichmentStatus,
     // Getters
     songCount,
     lovedSongs,
     topSongs,
+    availableGenres,
+    availableMoods,
     // Actions
     fetchSongs,
     fetchPlaylists,
@@ -151,6 +214,9 @@ export const useLibraryStore = defineStore('library', () => {
     incrementPlayCount,
     deleteSong,
     createPlaylist,
-    deletePlaylist
+    deletePlaylist,
+    updateSongTags,
+    enrichSongs,
+    fetchEnrichmentStatus
   }
 })

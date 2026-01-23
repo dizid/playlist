@@ -8,8 +8,36 @@ const library = useLibraryStore()
 
 const activeTab = ref('youtube')
 const isImporting = ref(false)
+const isEnriching = ref(false)
 const importProgress = ref({ current: 0, total: 0, message: '' })
 const importResults = ref(null)
+const enrichmentResults = ref(null)
+
+// Trigger enrichment after import completes
+async function triggerEnrichment() {
+  if (isEnriching.value) return
+
+  isEnriching.value = true
+  enrichmentResults.value = null
+
+  try {
+    const result = await library.enrichSongs({ all: true })
+    enrichmentResults.value = {
+      enriched: result.enriched,
+      failed: result.failed,
+      remaining: result.remaining
+    }
+
+    // If there are more pending, continue enriching
+    if (result.remaining > 0) {
+      setTimeout(triggerEnrichment, 500)
+    }
+  } catch (e) {
+    console.error('Enrichment error:', e)
+  } finally {
+    isEnriching.value = false
+  }
+}
 
 const tabs = [
   { id: 'youtube', label: 'YouTube', icon: '📺' },
@@ -122,6 +150,11 @@ async function importYouTubePlaylists() {
       message: `Imported ${totalImported} songs from ${playlists.length} playlists`
     }
 
+    // Trigger genre/mood enrichment
+    if (totalImported > 0) {
+      triggerEnrichment()
+    }
+
   } catch (error) {
     console.error('Import error:', error)
     importResults.value = {
@@ -215,6 +248,11 @@ async function importYouTubeLikes() {
       message: `Imported ${totalImported} liked videos`
     }
 
+    // Trigger genre/mood enrichment
+    if (totalImported > 0) {
+      triggerEnrichment()
+    }
+
   } catch (error) {
     console.error('Import error:', error)
     importResults.value = {
@@ -292,6 +330,11 @@ function handleShazamFile(event) {
         skipped: totalSkipped,
         message: `Imported ${totalImported} songs from Shazam`
       }
+
+      // Trigger genre/mood enrichment
+      if (totalImported > 0) {
+        triggerEnrichment()
+      }
     } catch (error) {
       console.error('Shazam import error:', error)
       importResults.value = {
@@ -352,6 +395,11 @@ function handleTakeoutFile(event) {
         skipped: totalSkipped,
         message: `Imported ${totalImported} videos from watch history`
       }
+
+      // Trigger genre/mood enrichment
+      if (totalImported > 0) {
+        triggerEnrichment()
+      }
     } catch (error) {
       console.error('Takeout import error:', error)
       importResults.value = {
@@ -386,6 +434,28 @@ function handleTakeoutFile(event) {
         </div>
       </div>
       <button @click="importResults = null" class="text-zinc-400 hover:text-white">✕</button>
+    </div>
+
+    <!-- Enrichment Status -->
+    <div
+      v-if="isEnriching || enrichmentResults"
+      class="bg-indigo-900/30 border border-indigo-700 rounded-xl p-4 mb-6"
+    >
+      <div class="flex items-center gap-3">
+        <div v-if="isEnriching" class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400"></div>
+        <span v-else class="text-xl">🏷️</span>
+        <div>
+          <p class="font-medium text-white">
+            {{ isEnriching ? 'Enriching metadata...' : 'Metadata enrichment complete' }}
+          </p>
+          <p v-if="enrichmentResults" class="text-sm text-zinc-400">
+            {{ enrichmentResults.enriched }} songs tagged with genres/moods
+            <span v-if="enrichmentResults.remaining > 0">
+              ({{ enrichmentResults.remaining }} remaining)
+            </span>
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Progress Bar -->

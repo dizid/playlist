@@ -13,11 +13,48 @@ export default async (req: Request, context: Context) => {
   const sql = getDb()
 
   try {
-    // GET /api/songs - Get all songs for user
+    // GET /api/songs - Get all songs for user with optional filtering
     if (req.method === 'GET') {
-      const songs = await withUserContext(sql, userId, () =>
-        sql`SELECT * FROM songs ORDER BY popularity DESC`
-      )
+      const url = new URL(req.url)
+      const genresParam = url.searchParams.get('genres')
+      const moodsParam = url.searchParams.get('moods')
+      const ratingParam = url.searchParams.get('rating')
+
+      // Parse filter arrays
+      const genres = genresParam ? genresParam.split(',').filter(g => g) : null
+      const moods = moodsParam ? moodsParam.split(',').filter(m => m) : null
+
+      // Build dynamic query based on filters
+      let songs
+      if (genres && moods) {
+        songs = await withUserContext(sql, userId, () =>
+          sql`SELECT * FROM songs
+              WHERE genres && ${genres}::text[] AND moods && ${moods}::text[]
+              ORDER BY popularity DESC NULLS LAST, play_count DESC`
+        )
+      } else if (genres) {
+        songs = await withUserContext(sql, userId, () =>
+          sql`SELECT * FROM songs
+              WHERE genres && ${genres}::text[]
+              ORDER BY popularity DESC NULLS LAST, play_count DESC`
+        )
+      } else if (moods) {
+        songs = await withUserContext(sql, userId, () =>
+          sql`SELECT * FROM songs
+              WHERE moods && ${moods}::text[]
+              ORDER BY popularity DESC NULLS LAST, play_count DESC`
+        )
+      } else if (ratingParam) {
+        songs = await withUserContext(sql, userId, () =>
+          sql`SELECT * FROM songs
+              WHERE rating = ${ratingParam}
+              ORDER BY popularity DESC NULLS LAST, play_count DESC`
+        )
+      } else {
+        songs = await withUserContext(sql, userId, () =>
+          sql`SELECT * FROM songs ORDER BY popularity DESC NULLS LAST, play_count DESC`
+        )
+      }
       return jsonResponse(songs)
     }
 
@@ -85,6 +122,21 @@ export default async (req: Request, context: Context) => {
           sql`
             UPDATE songs
             SET play_count = play_count + 1, last_played = NOW(), updated_at = NOW()
+            WHERE id = ${songId}::uuid
+          `
+        )
+      }
+
+      // Handle genre/mood update (manual tagging)
+      if (body.genres !== undefined || body.moods !== undefined) {
+        await withUserContext(sql, userId, () =>
+          sql`
+            UPDATE songs
+            SET
+              genres = COALESCE(${body.genres ?? null}::text[], genres),
+              moods = COALESCE(${body.moods ?? null}::text[], moods),
+              enrichment_status = 'manual',
+              updated_at = NOW()
             WHERE id = ${songId}::uuid
           `
         )

@@ -31,8 +31,14 @@ async function fetchWithAuth(endpoint, options = {}) {
 
 export const api = {
   // Songs
-  async getSongs() {
-    return fetchWithAuth('/songs')
+  async getSongs(filters = {}) {
+    const params = new URLSearchParams()
+    if (filters.genres?.length) params.set('genres', filters.genres.join(','))
+    if (filters.moods?.length) params.set('moods', filters.moods.join(','))
+    if (filters.rating) params.set('rating', filters.rating)
+
+    const query = params.toString()
+    return fetchWithAuth(`/songs${query ? '?' + query : ''}`)
   },
 
   async addSong(song) {
@@ -60,6 +66,25 @@ export const api = {
     return fetchWithAuth(`/songs/${songId}`, {
       method: 'DELETE'
     })
+  },
+
+  async updateSongTags(songId, { genres, moods }) {
+    return fetchWithAuth(`/songs/${songId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ genres, moods })
+    })
+  },
+
+  // Enrichment
+  async enrichSongs(options = {}) {
+    return fetchWithAuth('/enrich', {
+      method: 'POST',
+      body: JSON.stringify(options)
+    })
+  },
+
+  async getEnrichmentStatus() {
+    return fetchWithAuth('/enrich/status')
   },
 
   // Playlists
