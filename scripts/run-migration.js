@@ -1,8 +1,11 @@
 // Run database migrations on Neon
-// Usage: node scripts/run-migration.js
+// Usage: node scripts/run-migration.js [migration-file]
+// Examples:
+//   node scripts/run-migration.js                          # Run all migrations
+//   node scripts/run-migration.js 002_enable_rls.sql       # Run specific migration
 
 import { neon } from '@neondatabase/serverless';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -12,94 +15,100 @@ const DATABASE_URL = process.env.VITE_NEON_DATABASE_URL ||
   'postgresql://neondb_owner:npg_T1CbKlmBio3w@ep-jolly-term-a1ii1cjm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
 
 async function runMigration() {
-  console.log('Connecting to Neon database...');
+  const specificFile = process.argv[2];
+  const migrationsDir = join(__dirname, '..', 'db', 'migrations');
 
+  console.log('Connecting to Neon database...');
   const sql = neon(DATABASE_URL);
 
-  // Run each migration statement using tagged template
-  console.log('Running migration...');
-
   try {
-    // Enable UUID extension
-    await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-    console.log('✓ UUID extension');
+    // Get migration files to run
+    let files;
+    if (specificFile) {
+      files = [specificFile];
+    } else {
+      files = readdirSync(migrationsDir)
+        .filter(f => f.endsWith('.sql'))
+        .sort();
+    }
 
-    // Songs table
-    await sql`
-      CREATE TABLE IF NOT EXISTS songs (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        user_id TEXT NOT NULL,
-        youtube_id VARCHAR(11) NOT NULL,
-        title TEXT NOT NULL,
-        artist TEXT,
-        channel TEXT,
-        duration INTEGER,
-        thumbnail TEXT,
-        rating VARCHAR(20) DEFAULT 'neutral',
-        play_count INTEGER DEFAULT 0,
-        skip_count INTEGER DEFAULT 0,
-        popularity INTEGER DEFAULT 0,
-        genres TEXT[],
-        moods TEXT[],
-        source VARCHAR(20),
-        first_played TIMESTAMPTZ,
-        last_played TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(user_id, youtube_id)
-      )
-    `;
-    console.log('✓ Songs table');
+    console.log(`Running ${files.length} migration(s)...\n`);
 
-    // Playlists table
-    await sql`
-      CREATE TABLE IF NOT EXISTS playlists (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        user_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        type VARCHAR(20) DEFAULT 'smart',
-        rules JSONB,
-        song_ids UUID[],
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `;
-    console.log('✓ Playlists table');
+    for (const file of files) {
+      const filePath = join(migrationsDir, file);
+      console.log(`📄 ${file}`);
 
-    // Play history table
-    await sql`
-      CREATE TABLE IF NOT EXISTS play_history (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        user_id TEXT NOT NULL,
-        song_id UUID REFERENCES songs(id) ON DELETE CASCADE,
-        played_at TIMESTAMPTZ DEFAULT NOW(),
-        duration_watched INTEGER,
-        completed BOOLEAN DEFAULT FALSE
-      )
-    `;
-    console.log('✓ Play history table');
+      const content = readFileSync(filePath, 'utf-8');
 
-    // Indexes
-    await sql`CREATE INDEX IF NOT EXISTS idx_songs_user_id ON songs(user_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_songs_youtube_id ON songs(youtube_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_songs_rating ON songs(rating)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_songs_popularity ON songs(popularity DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_playlists_user_id ON playlists(user_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_play_history_user_id ON play_history(user_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_play_history_song_id ON play_history(song_id)`;
-    console.log('✓ Indexes created');
+      // Split by semicolons but handle functions/triggers that contain semicolons
+      const statements = splitSqlStatements(content);
 
-    // GIN indexes for arrays
-    await sql`CREATE INDEX IF NOT EXISTS idx_songs_genres ON songs USING GIN(genres)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_songs_moods ON songs USING GIN(moods)`;
-    console.log('✓ GIN indexes created');
+      for (const statement of statements) {
+        const trimmed = statement.trim();
+        if (!trimmed || trimmed.startsWith('--')) continue;
 
-    console.log('\n✅ Migration complete!');
+        try {
+          // Use raw query for DDL statements
+          await sql.unsafe(trimmed);
+          // Show first 50 chars of the statement
+          const preview = trimmed.replace(/\s+/g, ' ').substring(0, 60);
+          console.log(`  ✓ ${preview}...`);
+        } catch (err) {
+          // Some errors are ok (like "already exists")
+          if (err.message.includes('already exists') ||
+              err.message.includes('does not exist')) {
+            console.log(`  ⚠ ${err.message.split('\n')[0]}`);
+          } else {
+            throw err;
+          }
+        }
+      }
+      console.log('');
+    }
+
+    console.log('✅ Migration complete!');
 
   } catch (error) {
-    console.error('Migration error:', error.message);
-    throw error;
+    console.error('\n❌ Migration error:', error.message);
+    process.exit(1);
   }
+}
+
+// Split SQL into statements, handling functions with $$ delimiters
+function splitSqlStatements(sql) {
+  const statements = [];
+  let current = '';
+  let inDollarQuote = false;
+
+  const lines = sql.split('\n');
+
+  for (const line of lines) {
+    // Skip comment-only lines
+    if (line.trim().startsWith('--')) continue;
+
+    // Check for $$ delimiter (function bodies)
+    const dollarMatches = line.match(/\$\$/g);
+    if (dollarMatches) {
+      for (const _ of dollarMatches) {
+        inDollarQuote = !inDollarQuote;
+      }
+    }
+
+    current += line + '\n';
+
+    // If we're not inside a function and line ends with semicolon, it's a complete statement
+    if (!inDollarQuote && line.trim().endsWith(';')) {
+      statements.push(current.trim());
+      current = '';
+    }
+  }
+
+  // Add any remaining content
+  if (current.trim()) {
+    statements.push(current.trim());
+  }
+
+  return statements;
 }
 
 runMigration().catch(console.error);

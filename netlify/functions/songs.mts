@@ -1,5 +1,5 @@
 import type { Context, Config } from "@netlify/functions"
-import { getDb } from './_shared/db'
+import { getDb, withUserContext } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 
 export default async (req: Request, context: Context) => {
@@ -15,11 +15,9 @@ export default async (req: Request, context: Context) => {
   try {
     // GET /api/songs - Get all songs for user
     if (req.method === 'GET') {
-      const songs = await sql`
-        SELECT * FROM songs
-        WHERE user_id = ${userId}
-        ORDER BY popularity DESC
-      `
+      const songs = await withUserContext(sql, userId, () =>
+        sql`SELECT * FROM songs ORDER BY popularity DESC`
+      )
       return jsonResponse(songs)
     }
 
@@ -32,27 +30,29 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Missing required fields: youtubeId, title', 400)
       }
 
-      const result = await sql`
-        INSERT INTO songs (user_id, youtube_id, title, artist, channel, duration, thumbnail, source)
-        VALUES (
-          ${userId},
-          ${body.youtubeId},
-          ${body.title},
-          ${body.artist || null},
-          ${body.channel || null},
-          ${body.duration || null},
-          ${body.thumbnail || null},
-          ${body.source || 'manual'}
-        )
-        ON CONFLICT (user_id, youtube_id) DO UPDATE SET
-          title = EXCLUDED.title,
-          artist = EXCLUDED.artist,
-          channel = EXCLUDED.channel,
-          duration = EXCLUDED.duration,
-          thumbnail = EXCLUDED.thumbnail,
-          updated_at = NOW()
-        RETURNING *
-      `
+      const result = await withUserContext(sql, userId, () =>
+        sql`
+          INSERT INTO songs (user_id, youtube_id, title, artist, channel, duration, thumbnail, source)
+          VALUES (
+            ${userId},
+            ${body.youtubeId},
+            ${body.title},
+            ${body.artist || null},
+            ${body.channel || null},
+            ${body.duration || null},
+            ${body.thumbnail || null},
+            ${body.source || 'manual'}
+          )
+          ON CONFLICT (user_id, youtube_id) DO UPDATE SET
+            title = EXCLUDED.title,
+            artist = EXCLUDED.artist,
+            channel = EXCLUDED.channel,
+            duration = EXCLUDED.duration,
+            thumbnail = EXCLUDED.thumbnail,
+            updated_at = NOW()
+          RETURNING *
+        `
+      )
       return jsonResponse(result[0], 201)
     }
 
@@ -70,20 +70,24 @@ export default async (req: Request, context: Context) => {
 
       // Handle rating update
       if (body.rating !== undefined) {
-        await sql`
-          UPDATE songs
-          SET rating = ${body.rating}, updated_at = NOW()
-          WHERE id = ${songId}::uuid AND user_id = ${userId}
-        `
+        await withUserContext(sql, userId, () =>
+          sql`
+            UPDATE songs
+            SET rating = ${body.rating}, updated_at = NOW()
+            WHERE id = ${songId}::uuid
+          `
+        )
       }
 
       // Handle play count increment
       if (body.incrementPlayCount) {
-        await sql`
-          UPDATE songs
-          SET play_count = play_count + 1, last_played = NOW(), updated_at = NOW()
-          WHERE id = ${songId}::uuid AND user_id = ${userId}
-        `
+        await withUserContext(sql, userId, () =>
+          sql`
+            UPDATE songs
+            SET play_count = play_count + 1, last_played = NOW(), updated_at = NOW()
+            WHERE id = ${songId}::uuid
+          `
+        )
       }
 
       return jsonResponse({ success: true })
@@ -99,10 +103,9 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Song ID required', 400)
       }
 
-      await sql`
-        DELETE FROM songs
-        WHERE id = ${songId}::uuid AND user_id = ${userId}
-      `
+      await withUserContext(sql, userId, () =>
+        sql`DELETE FROM songs WHERE id = ${songId}::uuid`
+      )
       return jsonResponse({ success: true })
     }
 

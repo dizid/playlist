@@ -1,5 +1,5 @@
 import type { Context, Config } from "@netlify/functions"
-import { getDb } from './_shared/db'
+import { getDb, withUserContext } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 
 export default async (req: Request, context: Context) => {
@@ -18,19 +18,21 @@ export default async (req: Request, context: Context) => {
       const url = new URL(req.url)
       const limit = parseInt(url.searchParams.get('limit') || '50')
 
-      const history = await sql`
-        SELECT
-          ph.*,
-          s.title,
-          s.artist,
-          s.thumbnail,
-          s.youtube_id
-        FROM play_history ph
-        JOIN songs s ON ph.song_id = s.id
-        WHERE ph.user_id = ${userId}
-        ORDER BY ph.played_at DESC
-        LIMIT ${limit}
-      `
+      // RLS filters both play_history and songs tables automatically
+      const history = await withUserContext(sql, userId, () =>
+        sql`
+          SELECT
+            ph.*,
+            s.title,
+            s.artist,
+            s.thumbnail,
+            s.youtube_id
+          FROM play_history ph
+          JOIN songs s ON ph.song_id = s.id
+          ORDER BY ph.played_at DESC
+          LIMIT ${limit}
+        `
+      )
       return jsonResponse(history)
     }
 
@@ -42,23 +44,27 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Missing required field: songId', 400)
       }
 
-      const result = await sql`
-        INSERT INTO play_history (user_id, song_id, duration_watched, completed)
-        VALUES (
-          ${userId},
-          ${body.songId}::uuid,
-          ${body.durationWatched || null},
-          ${body.completed || false}
-        )
-        RETURNING *
-      `
+      const result = await withUserContext(sql, userId, () =>
+        sql`
+          INSERT INTO play_history (user_id, song_id, duration_watched, completed)
+          VALUES (
+            ${userId},
+            ${body.songId}::uuid,
+            ${body.durationWatched || null},
+            ${body.completed || false}
+          )
+          RETURNING *
+        `
+      )
 
       // Also update the song's play_count and last_played
-      await sql`
-        UPDATE songs
-        SET play_count = play_count + 1, last_played = NOW(), updated_at = NOW()
-        WHERE id = ${body.songId}::uuid AND user_id = ${userId}
-      `
+      await withUserContext(sql, userId, () =>
+        sql`
+          UPDATE songs
+          SET play_count = play_count + 1, last_played = NOW(), updated_at = NOW()
+          WHERE id = ${body.songId}::uuid
+        `
+      )
 
       return jsonResponse(result[0], 201)
     }

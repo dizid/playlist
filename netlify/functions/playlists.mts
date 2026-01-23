@@ -1,5 +1,5 @@
 import type { Context, Config } from "@netlify/functions"
-import { getDb } from './_shared/db'
+import { getDb, withUserContext } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 
 export default async (req: Request, context: Context) => {
@@ -15,11 +15,9 @@ export default async (req: Request, context: Context) => {
   try {
     // GET /api/playlists - Get all playlists for user
     if (req.method === 'GET') {
-      const playlists = await sql`
-        SELECT * FROM playlists
-        WHERE user_id = ${userId}
-        ORDER BY created_at DESC
-      `
+      const playlists = await withUserContext(sql, userId, () =>
+        sql`SELECT * FROM playlists ORDER BY created_at DESC`
+      )
       return jsonResponse(playlists)
     }
 
@@ -31,17 +29,19 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Missing required field: name', 400)
       }
 
-      const result = await sql`
-        INSERT INTO playlists (user_id, name, type, rules, song_ids)
-        VALUES (
-          ${userId},
-          ${body.name},
-          ${body.type || 'smart'},
-          ${body.rules ? JSON.stringify(body.rules) : null},
-          ${body.songIds || null}
-        )
-        RETURNING *
-      `
+      const result = await withUserContext(sql, userId, () =>
+        sql`
+          INSERT INTO playlists (user_id, name, type, rules, song_ids)
+          VALUES (
+            ${userId},
+            ${body.name},
+            ${body.type || 'smart'},
+            ${body.rules ? JSON.stringify(body.rules) : null},
+            ${body.songIds || null}
+          )
+          RETURNING *
+        `
+      )
       return jsonResponse(result[0], 201)
     }
 
@@ -57,32 +57,34 @@ export default async (req: Request, context: Context) => {
 
       const body = await req.json()
 
-      // Build dynamic update query
-      const updates: string[] = []
-      const values: unknown[] = []
-
       if (body.name !== undefined) {
-        await sql`
-          UPDATE playlists
-          SET name = ${body.name}, updated_at = NOW()
-          WHERE id = ${playlistId}::uuid AND user_id = ${userId}
-        `
+        await withUserContext(sql, userId, () =>
+          sql`
+            UPDATE playlists
+            SET name = ${body.name}, updated_at = NOW()
+            WHERE id = ${playlistId}::uuid
+          `
+        )
       }
 
       if (body.rules !== undefined) {
-        await sql`
-          UPDATE playlists
-          SET rules = ${JSON.stringify(body.rules)}, updated_at = NOW()
-          WHERE id = ${playlistId}::uuid AND user_id = ${userId}
-        `
+        await withUserContext(sql, userId, () =>
+          sql`
+            UPDATE playlists
+            SET rules = ${JSON.stringify(body.rules)}, updated_at = NOW()
+            WHERE id = ${playlistId}::uuid
+          `
+        )
       }
 
       if (body.songIds !== undefined) {
-        await sql`
-          UPDATE playlists
-          SET song_ids = ${body.songIds}, updated_at = NOW()
-          WHERE id = ${playlistId}::uuid AND user_id = ${userId}
-        `
+        await withUserContext(sql, userId, () =>
+          sql`
+            UPDATE playlists
+            SET song_ids = ${body.songIds}, updated_at = NOW()
+            WHERE id = ${playlistId}::uuid
+          `
+        )
       }
 
       return jsonResponse({ success: true })
@@ -98,10 +100,9 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Playlist ID required', 400)
       }
 
-      await sql`
-        DELETE FROM playlists
-        WHERE id = ${playlistId}::uuid AND user_id = ${userId}
-      `
+      await withUserContext(sql, userId, () =>
+        sql`DELETE FROM playlists WHERE id = ${playlistId}::uuid`
+      )
       return jsonResponse({ success: true })
     }
 
