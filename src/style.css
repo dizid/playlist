@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* TuneLayer custom theme */
+@theme {
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-surface: #18181b;
+  --color-surface-light: #27272a;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-loved: #ef4444;
+  --color-liked: #22c55e;
+  --color-neutral: #71717a;
+}
+
+/* Base styles */
+body {
+  @apply bg-zinc-950 text-zinc-100 antialiased;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#app {
+  @apply min-h-screen;
+}
