@@ -1,6 +1,6 @@
 // Neon Auth client service
 // Uses Better Auth client (Neon Auth is built on Better Auth)
-// Sessions are managed via HTTP-only cookies - no localStorage needed
+// Sessions are managed via HTTP-only cookies
 
 import { createAuthClient } from 'better-auth/client'
 
@@ -9,17 +9,23 @@ const betterAuth = createAuthClient({
   baseURL: import.meta.env.VITE_NEON_AUTH_URL
 })
 
+// Cache the current session for token access
+let currentSession = null
+
 export const authClient = {
   // Get current session from Neon Auth (reads HTTP-only cookie)
   async getSession() {
     try {
-      const session = await betterAuth.getSession()
-      if (session?.data?.session) {
-        return { data: session.data }
+      const result = await betterAuth.getSession()
+      if (result?.data?.session) {
+        currentSession = result.data
+        return { data: result.data }
       }
+      currentSession = null
       return { data: null }
     } catch (error) {
       console.error('Failed to get session:', error)
+      currentSession = null
       return { data: null }
     }
   },
@@ -41,7 +47,15 @@ export const authClient = {
     } catch (error) {
       console.error('Sign out error:', error)
     }
+    currentSession = null
   }
+}
+
+// Get the JWT access token for API calls
+// Returns the token from the current session, or null if not authenticated
+export function getSessionToken() {
+  // Return the session's access token (JWT) for API authorization
+  return currentSession?.session?.token || currentSession?.session?.accessToken || null
 }
 
 export default authClient
