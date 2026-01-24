@@ -59,15 +59,26 @@ const router = createRouter({
   routes
 })
 
-// Auth guard - check for Neon Auth session token
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('tunelayer_session')
+// Auth guard - check session via Pinia store
+// Note: This runs after Pinia is installed (see main.js order)
+router.beforeEach(async (to, from, next) => {
+  if (to.meta.requiresAuth) {
+    // Dynamically import the store to avoid circular dependencies
+    const { useAuthStore } = await import('./stores/auth')
+    const authStore = useAuthStore()
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ name: 'landing' })
-  } else {
-    next()
+    // If not authenticated, try to restore session from Neon Auth cookie
+    if (!authStore.isAuthenticated) {
+      await authStore.restoreSession()
+    }
+
+    // After restore attempt, check again
+    if (!authStore.isAuthenticated) {
+      return next({ name: 'landing' })
+    }
   }
+
+  next()
 })
 
 export default router

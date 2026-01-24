@@ -1,10 +1,8 @@
 // Neon Auth client service
 // Uses Better Auth client (Neon Auth is built on Better Auth)
+// Sessions are managed via HTTP-only cookies - no localStorage needed
 
 import { createAuthClient } from 'better-auth/client'
-
-// Session token storage key
-const SESSION_KEY = 'tunelayer_session'
 
 // Create Better Auth client pointing to Neon Auth endpoint
 const betterAuth = createAuthClient({
@@ -12,7 +10,7 @@ const betterAuth = createAuthClient({
 })
 
 export const authClient = {
-  // Get current session from Neon Auth
+  // Get current session from Neon Auth (reads HTTP-only cookie)
   async getSession() {
     try {
       const session = await betterAuth.getSession()
@@ -36,26 +34,14 @@ export const authClient = {
     }
   },
 
-  // Sign out
+  // Sign out (clears HTTP-only cookie)
   async signOut() {
     try {
       await betterAuth.signOut()
-      localStorage.removeItem(SESSION_KEY)
     } catch (error) {
       console.error('Sign out error:', error)
-      localStorage.removeItem(SESSION_KEY)
     }
-  },
-
-  // Store session token (called from callback page)
-  setSessionToken(token) {
-    localStorage.setItem(SESSION_KEY, token)
   }
-}
-
-// Helper to get session token for API calls
-export function getSessionToken() {
-  return localStorage.getItem(SESSION_KEY)
 }
 
 export default authClient

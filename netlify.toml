@@ -11,3 +11,9 @@
   targetPort = 5173
   port = 8888
   autoLaunch = false
+
+# SPA fallback - serve index.html for all routes so Vue Router can handle them
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

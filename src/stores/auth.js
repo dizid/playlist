@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authClient, getSessionToken } from '../services/auth-client'
+import { authClient } from '../services/auth-client'
 
 // YouTube token storage key (separate from Neon Auth session)
 const YOUTUBE_TOKEN_KEY = 'tunelayer_youtube_token'
@@ -18,7 +18,6 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed(() => user.value?.email || '')
   const userName = computed(() => user.value?.name || '')
   const userPicture = computed(() => user.value?.image || '')
-  const accessToken = computed(() => getSessionToken())
   const hasYouTubeAccess = computed(() => !!youtubeToken.value)
 
   // Login with Neon Auth (Google provider)
@@ -27,6 +26,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
+      // This redirects to Neon Auth -> Google OAuth
+      // Session will be established via HTTP-only cookie on callback
       authClient.signIn.social({
         provider: 'google',
         callbackURL: `${window.location.origin}/auth/callback`
@@ -53,16 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Handle Neon Auth callback
-  async function handleAuthCallback(token) {
-    if (token) {
-      authClient.setSessionToken(token)
-      return restoreSession()
-    }
-    return false
-  }
-
-  // Restore session on app load
+  // Restore session from Neon Auth (uses HTTP-only cookie)
   async function restoreSession() {
     isLoading.value = true
     error.value = null
@@ -119,7 +111,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Logout
   async function logout() {
-    await authClient.signOut()
+    try {
+      await authClient.signOut()
+    } catch (e) {
+      console.error('Sign out error:', e)
+    }
     user.value = null
     session.value = null
     youtubeToken.value = null
@@ -144,12 +140,10 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     userName,
     userPicture,
-    accessToken,
     hasYouTubeAccess,
     // Actions
     loginWithGoogle,
     loginWithGithub,
-    handleAuthCallback,
     restoreSession,
     connectYouTube,
     handleYouTubeCallback,
