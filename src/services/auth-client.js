@@ -5,8 +5,12 @@
 import { createAuthClient } from 'better-auth/client'
 
 // Create Better Auth client pointing to Neon Auth endpoint
+// credentials: 'include' enables cross-origin cookie handling
 const betterAuth = createAuthClient({
-  baseURL: import.meta.env.VITE_NEON_AUTH_URL
+  baseURL: import.meta.env.VITE_NEON_AUTH_URL,
+  fetchOptions: {
+    credentials: 'include'
+  }
 })
 
 // Cache the current session for token access
