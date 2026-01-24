@@ -33,3 +33,6 @@ dist-ssr
 CLAUDE.md
 ROADMAP.md
 todo.md
+
+# Scripts with credentials
+scripts/apply-rls.js

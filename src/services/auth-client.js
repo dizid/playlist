@@ -1,65 +1,49 @@
 // Neon Auth client service
-// Handles authentication with Neon Auth (Google + GitHub providers)
+// Uses official @neondatabase/neon-js SDK for authentication
+
+import { createAuthClient } from '@neondatabase/neon-js/auth'
 
 const NEON_AUTH_URL = import.meta.env.VITE_NEON_AUTH_URL
 
 // Session token storage key
 const SESSION_KEY = 'tunelayer_session'
 
+// Create official Neon Auth client
+const neonAuth = createAuthClient(NEON_AUTH_URL)
+
 export const authClient = {
   // Get current session from Neon Auth
   async getSession() {
-    const token = localStorage.getItem(SESSION_KEY)
-    if (!token) {
-      return { data: null }
-    }
-
     try {
-      const response = await fetch(`${NEON_AUTH_URL}/api/auth/get-session`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        // Token expired or invalid
-        localStorage.removeItem(SESSION_KEY)
-        return { data: null }
+      const session = await neonAuth.getSession()
+      if (session?.data?.session) {
+        return { data: session.data }
       }
-
-      const data = await response.json()
-      return { data }
+      return { data: null }
     } catch (error) {
       console.error('Failed to get session:', error)
       return { data: null }
     }
   },
 
-  // Social sign-in methods
+  // Social sign-in methods - uses official SDK
   signIn: {
     social({ provider, callbackURL }) {
-      // Redirect to Neon Auth for OAuth flow
-      const encodedCallback = encodeURIComponent(callbackURL)
-      window.location.href = `${NEON_AUTH_URL}/api/auth/signin/${provider}?callbackURL=${encodedCallback}`
+      neonAuth.signIn.social({
+        provider,
+        callbackURL
+      })
     }
   },
 
-  // Sign out
+  // Sign out - uses official SDK
   async signOut() {
-    const token = localStorage.getItem(SESSION_KEY)
-    localStorage.removeItem(SESSION_KEY)
-
-    if (token) {
-      try {
-        await fetch(`${NEON_AUTH_URL}/api/auth/signout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-      } catch (error) {
-        console.error('Sign out error:', error)
-      }
+    try {
+      await neonAuth.signOut()
+      localStorage.removeItem(SESSION_KEY)
+    } catch (error) {
+      console.error('Sign out error:', error)
+      localStorage.removeItem(SESSION_KEY)
     }
   },
 
