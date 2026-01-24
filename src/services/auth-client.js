@@ -1,21 +1,21 @@
 // Neon Auth client service
-// Uses official @neondatabase/neon-js SDK for authentication
+// Uses Better Auth client (Neon Auth is built on Better Auth)
 
-import { createAuthClient } from '@neondatabase/neon-js/auth'
-
-const NEON_AUTH_URL = import.meta.env.VITE_NEON_AUTH_URL
+import { createAuthClient } from 'better-auth/client'
 
 // Session token storage key
 const SESSION_KEY = 'tunelayer_session'
 
-// Create official Neon Auth client
-const neonAuth = createAuthClient(NEON_AUTH_URL)
+// Create Better Auth client pointing to Neon Auth endpoint
+const betterAuth = createAuthClient({
+  baseURL: import.meta.env.VITE_NEON_AUTH_URL
+})
 
 export const authClient = {
   // Get current session from Neon Auth
   async getSession() {
     try {
-      const session = await neonAuth.getSession()
+      const session = await betterAuth.getSession()
       if (session?.data?.session) {
         return { data: session.data }
       }
@@ -26,20 +26,20 @@ export const authClient = {
     }
   },
 
-  // Social sign-in methods - uses official SDK
+  // Social sign-in methods
   signIn: {
     social({ provider, callbackURL }) {
-      neonAuth.signIn.social({
+      betterAuth.signIn.social({
         provider,
         callbackURL
       })
     }
   },
 
-  // Sign out - uses official SDK
+  // Sign out
   async signOut() {
     try {
-      await neonAuth.signOut()
+      await betterAuth.signOut()
       localStorage.removeItem(SESSION_KEY)
     } catch (error) {
       console.error('Sign out error:', error)
