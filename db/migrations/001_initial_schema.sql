@@ -1,4 +1,4 @@
--- TuneLayer Database Schema
+-- TuneCraft Database Schema
 -- Run this in Neon SQL Editor or via psql
 
 -- Enable UUID extension

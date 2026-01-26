@@ -10,6 +10,17 @@ const isLoading = ref(true)
 
 onMounted(async () => {
   try {
+    // Check for OAuth error in URL params (Google returns errors here on redirect_uri_mismatch, etc.)
+    const urlParams = new URLSearchParams(window.location.search)
+    const oauthError = urlParams.get('error')
+    const oauthErrorDesc = urlParams.get('error_description')
+
+    if (oauthError) {
+      error.value = `OAuth error: ${oauthError}${oauthErrorDesc ? ` - ${oauthErrorDesc}` : ''}`
+      isLoading.value = false
+      return
+    }
+
     // Neon Auth establishes session via HTTP-only cookie during OAuth flow
     // The neon_auth_session_verifier in URL is a PKCE parameter (handled by SDK)
     // Just call restoreSession() to get the user data from the cookie-based session

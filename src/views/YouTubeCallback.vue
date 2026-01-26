@@ -8,7 +8,17 @@ const auth = useAuthStore()
 const error = ref(null)
 
 onMounted(() => {
-  // YouTube OAuth returns token in URL hash
+  // Check for OAuth error in URL params (Google returns errors here on redirect_uri_mismatch, etc.)
+  const urlParams = new URLSearchParams(window.location.search)
+  const oauthError = urlParams.get('error')
+  const oauthErrorDesc = urlParams.get('error_description')
+
+  if (oauthError) {
+    error.value = `YouTube OAuth error: ${oauthError}${oauthErrorDesc ? ` - ${oauthErrorDesc}` : ''}`
+    return
+  }
+
+  // YouTube OAuth returns token in URL hash (implicit grant flow)
   const success = auth.handleYouTubeCallback()
 
   if (success) {

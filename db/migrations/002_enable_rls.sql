@@ -1,4 +1,4 @@
--- TuneLayer RLS Migration
+-- TuneCraft RLS Migration
 -- Enable Row Level Security on all user data tables
 
 -- ============================================

@@ -27,7 +27,7 @@ const navItems = [
       <!-- Logo -->
       <div class="flex items-center gap-2 px-6 py-5 border-b border-zinc-800">
         <span class="text-2xl">🎧</span>
-        <span class="text-xl font-bold text-white">TuneLayer</span>
+        <span class="text-xl font-bold text-white">TuneCraft</span>
       </div>
 
       <!-- Navigation -->
@@ -73,6 +73,6 @@ const navItems = [
   <!-- Mobile header -->
   <header class="sticky top-0 z-40 flex items-center gap-4 px-4 py-3 bg-zinc-900 border-b border-zinc-800 lg:hidden">
     <span class="text-xl">🎧</span>
-    <span class="font-bold text-white">TuneLayer</span>
+    <span class="font-bold text-white">TuneCraft</span>
   </header>
 </template>

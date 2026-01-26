@@ -1,4 +1,4 @@
-# TuneLayer
+# TuneCraft
 
 A personal music taste layer on top of YouTube. Own your metadata (ratings, play counts, tags) while YouTube handles playback.
 
@@ -58,6 +58,6 @@ db/migrations/       # Database schema
 
 ## Philosophy
 
-- **Companion, not player**: TuneLayer manages your taste data; YouTube plays the music
+- **Companion, not player**: TuneCraft manages your taste data; YouTube plays the music
 - **Own your data**: All metadata stored in your Neon database
 - **Smart over manual**: Rules-based playlists beat manual curation

@@ -13,7 +13,6 @@ onMounted(() => {
 
 const stats = computed(() => [
   { label: 'Songs', value: library.songCount, icon: '🎵' },
-  { label: 'Loved', value: library.lovedSongs.length, icon: '❤️' },
   { label: 'Playlists', value: library.playlists.length, icon: '📋' }
 ])
 
@@ -35,7 +34,7 @@ const quickActions = [
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
       <div
         v-for="stat in stats"
         :key="stat.label"
@@ -93,13 +92,7 @@ const quickActions = [
             <p class="font-medium text-white truncate">{{ song.title }}</p>
             <p class="text-sm text-zinc-500 truncate">{{ song.artist || song.channel }}</p>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-zinc-500">{{ song.play_count }} plays</span>
-            <span
-              v-if="song.rating === 'loved'"
-              class="text-red-500"
-            >❤️</span>
-          </div>
+          <span class="text-sm text-zinc-500">{{ song.play_count }} plays</span>
         </div>
       </div>
     </div>

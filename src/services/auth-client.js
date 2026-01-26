@@ -1,26 +1,31 @@
 // Neon Auth client service
-// Uses Better Auth client (Neon Auth is built on Better Auth)
+// Uses Neon's auth client which handles OAuth callbacks automatically
 // Sessions are managed via HTTP-only cookies
 
-import { createAuthClient } from 'better-auth/client'
+import { createAuthClient } from '@neondatabase/auth'
 
-// Create Better Auth client pointing to Neon Auth endpoint
-// credentials: 'include' enables cross-origin cookie handling
-const betterAuth = createAuthClient({
-  baseURL: import.meta.env.VITE_NEON_AUTH_URL,
-  fetchOptions: {
-    credentials: 'include'
-  }
-})
+// In production, use our proxy to handle cross-domain cookies
+// In development, use Neon Auth directly (localhost doesn't have cookie issues)
+const isProduction = import.meta.env.PROD
+const baseURL = isProduction
+  ? `${window.location.origin}/neon`
+  : import.meta.env.VITE_NEON_AUTH_URL
+
+// Debug logging to help diagnose OAuth issues
+console.log('[Auth] Mode:', isProduction ? 'production' : 'development')
+console.log('[Auth] Base URL:', baseURL)
+
+const neonAuth = createAuthClient(baseURL)
 
 // Cache the current session for token access
 let currentSession = null
 
 export const authClient = {
-  // Get current session from Neon Auth (reads HTTP-only cookie)
+  // Get current session from Neon Auth
+  // On callback pages, this auto-exchanges the neon_auth_session_verifier for a session
   async getSession() {
     try {
-      const result = await betterAuth.getSession()
+      const result = await neonAuth.getSession()
       if (result?.data?.session) {
         currentSession = result.data
         return { data: result.data }
@@ -37,7 +42,7 @@ export const authClient = {
   // Social sign-in methods
   signIn: {
     social({ provider, callbackURL }) {
-      betterAuth.signIn.social({
+      neonAuth.signIn.social({
         provider,
         callbackURL
       })
@@ -47,7 +52,7 @@ export const authClient = {
   // Sign out (clears HTTP-only cookie)
   async signOut() {
     try {
-      await betterAuth.signOut()
+      await neonAuth.signOut()
     } catch (error) {
       console.error('Sign out error:', error)
     }
@@ -57,9 +62,20 @@ export const authClient = {
 
 // Get the JWT access token for API calls
 // Returns the token from the current session, or null if not authenticated
-export function getSessionToken() {
-  // Return the session's access token (JWT) for API authorization
-  return currentSession?.session?.token || currentSession?.session?.accessToken || null
+// This is async to handle race conditions where session isn't loaded yet
+export async function getSessionToken() {
+  // If no session cached, try to fetch it first
+  if (!currentSession) {
+    await authClient.getSession()
+  }
+
+  // Neon Auth stores token in session.token
+  return currentSession?.session?.token || null
+}
+
+// Get the user ID from the current session (synchronous)
+export function getUserId() {
+  return currentSession?.session?.userId || currentSession?.user?.id || null
 }
 
 export default authClient

@@ -1,6 +1,15 @@
 // Last.fm API integration for genre/mood enrichment
+import { config } from 'dotenv'
 
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY || ''
+// Load .env file for local development
+config()
+
+// Get API key - try Netlify.env first (production), then process.env (local dev)
+function getLastfmApiKey(): string {
+  return (typeof Netlify !== 'undefined' && Netlify.env?.get('LASTFM_API_KEY'))
+    || process.env.LASTFM_API_KEY
+    || ''
+}
 const LASTFM_BASE_URL = 'https://ws.audioscrobbler.com/2.0/'
 
 // Genre taxonomy - maps Last.fm tags to our standardized genres
@@ -169,7 +178,8 @@ export interface TrackMetadata {
 
 // Lookup track metadata from Last.fm
 export async function lookupTrackMetadata(artist: string, title: string): Promise<TrackMetadata | null> {
-  if (!LASTFM_API_KEY) {
+  const apiKey = getLastfmApiKey()
+  if (!apiKey) {
     console.warn('LASTFM_API_KEY not configured')
     return null
   }
@@ -184,7 +194,7 @@ export async function lookupTrackMetadata(artist: string, title: string): Promis
     url.searchParams.set('method', 'track.getTopTags')
     url.searchParams.set('artist', cleanArtist)
     url.searchParams.set('track', cleanTitle)
-    url.searchParams.set('api_key', LASTFM_API_KEY)
+    url.searchParams.set('api_key', apiKey)
     url.searchParams.set('format', 'json')
 
     const response = await fetch(url.toString())
@@ -224,13 +234,14 @@ export async function lookupTrackMetadata(artist: string, title: string): Promis
 
 // Fallback: get artist-level tags when track tags are empty
 async function lookupArtistTags(artist: string): Promise<TrackMetadata | null> {
-  if (!LASTFM_API_KEY) return null
+  const apiKey = getLastfmApiKey()
+  if (!apiKey) return null
 
   try {
     const url = new URL(LASTFM_BASE_URL)
     url.searchParams.set('method', 'artist.getTopTags')
     url.searchParams.set('artist', artist)
-    url.searchParams.set('api_key', LASTFM_API_KEY)
+    url.searchParams.set('api_key', apiKey)
     url.searchParams.set('format', 'json')
 
     const response = await fetch(url.toString())

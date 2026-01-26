@@ -5,7 +5,6 @@ import SongCard from '../components/SongCard.vue'
 
 const library = useLibraryStore()
 const searchQuery = ref('')
-const filterRating = ref('all')
 
 onMounted(() => {
   library.fetchSongs()
@@ -24,11 +23,6 @@ const filteredSongs = computed(() => {
     )
   }
 
-  // Filter by rating
-  if (filterRating.value !== 'all') {
-    songs = songs.filter(s => s.rating === filterRating.value)
-  }
-
   return songs
 })
 </script>
@@ -42,25 +36,13 @@ const filteredSongs = computed(() => {
         <p class="text-zinc-400">{{ library.songCount }} songs</p>
       </div>
 
-      <!-- Search & Filters -->
-      <div class="flex flex-col sm:flex-row gap-3">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search songs..."
-          class="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-        />
-        <select
-          v-model="filterRating"
-          class="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
-        >
-          <option value="all">All ratings</option>
-          <option value="loved">❤️ Loved</option>
-          <option value="liked">👍 Liked</option>
-          <option value="neutral">➖ Neutral</option>
-          <option value="disliked">👎 Disliked</option>
-        </select>
-      </div>
+      <!-- Search -->
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Search songs..."
+        class="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+      />
     </div>
 
     <!-- Songs List -->

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useLibraryStore } from '../stores/library'
 import GenreMoodEditor from './GenreMoodEditor.vue'
 
@@ -13,31 +13,38 @@ const props = defineProps({
 const library = useLibraryStore()
 const showTagEditor = ref(false)
 
+// Check if song has a valid YouTube video
+const hasValidYouTube = computed(() => {
+  // Invalid if: placeholder ID (shz*) OR youtube_status is pending/not_found
+  if (props.song.youtube_id?.startsWith('shz')) return false
+  if (props.song.youtube_status === 'pending') return false
+  if (props.song.youtube_status === 'not_found') return false
+  return true
+})
+
 function playOnYouTube() {
+  if (!hasValidYouTube.value) return
   window.open(`https://www.youtube.com/watch?v=${props.song.youtube_id}`, '_blank')
   library.incrementPlayCount(props.song.id)
 }
-
-async function setRating(rating) {
-  await library.rateSong(props.song.id, rating)
-}
-
-const ratingOptions = [
-  { value: 'loved', icon: '❤️', label: 'Love' },
-  { value: 'liked', icon: '👍', label: 'Like' },
-  { value: 'neutral', icon: '➖', label: 'Neutral' },
-  { value: 'disliked', icon: '👎', label: 'Dislike' }
-]
 </script>
 
 <template>
-  <div class="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-colors">
+  <div
+    :class="[
+      'flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl transition-colors',
+      hasValidYouTube ? 'hover:border-zinc-700' : 'opacity-50'
+    ]"
+  >
     <!-- Thumbnail -->
     <img
       v-if="song.thumbnail"
       :src="song.thumbnail"
       :alt="song.title"
-      class="w-14 h-14 rounded object-cover cursor-pointer hover:opacity-80"
+      :class="[
+        'w-14 h-14 rounded object-cover',
+        hasValidYouTube ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
+      ]"
       @click="playOnYouTube"
     />
     <div v-else class="w-14 h-14 bg-zinc-800 rounded flex items-center justify-center">
@@ -47,7 +54,10 @@ const ratingOptions = [
     <!-- Info -->
     <div class="flex-1 min-w-0">
       <p
-        class="font-medium text-white truncate cursor-pointer hover:text-indigo-400"
+        :class="[
+          'font-medium truncate',
+          hasValidYouTube ? 'text-white cursor-pointer hover:text-indigo-400' : 'text-zinc-400 cursor-default'
+        ]"
         @click="playOnYouTube"
       >
         {{ song.title }}
@@ -61,6 +71,9 @@ const ratingOptions = [
         <span v-if="song.genres?.length" class="text-zinc-500">
           {{ song.genres.slice(0, 2).join(', ') }}
         </span>
+        <span v-if="!hasValidYouTube" class="text-amber-500">
+          ⚠️ No YouTube link
+        </span>
         <button
           @click="showTagEditor = true"
           class="text-indigo-400 hover:text-indigo-300"
@@ -70,22 +83,9 @@ const ratingOptions = [
       </div>
     </div>
 
-    <!-- Rating -->
-    <div class="flex items-center gap-1">
-      <button
-        v-for="option in ratingOptions"
-        :key="option.value"
-        @click="setRating(option.value)"
-        :title="option.label"
-        :class="song.rating === option.value ? 'opacity-100 scale-110' : 'opacity-40 hover:opacity-70'"
-        class="text-lg transition-all"
-      >
-        {{ option.icon }}
-      </button>
-    </div>
-
-    <!-- Play button -->
+    <!-- Play button (only show if valid YouTube) -->
     <button
+      v-if="hasValidYouTube"
       @click="playOnYouTube"
       class="p-2 text-white bg-red-600 rounded-full hover:bg-red-700 transition-colors"
       title="Play on YouTube"
@@ -94,6 +94,8 @@ const ratingOptions = [
         <path d="M8 5v14l11-7z"/>
       </svg>
     </button>
+    <!-- Placeholder for alignment when no play button -->
+    <div v-else class="w-9 h-9" />
 
     <!-- Tag Editor Modal -->
     <GenreMoodEditor

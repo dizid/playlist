@@ -44,7 +44,7 @@ const features = [
         <!-- Logo -->
         <div class="flex items-center justify-center gap-3 mb-8">
           <span class="text-5xl">🎧</span>
-          <h1 class="text-4xl md:text-5xl font-bold text-white">TuneLayer</h1>
+          <h1 class="text-4xl md:text-5xl font-bold text-white">TuneCraft</h1>
         </div>
 
         <!-- Tagline -->
@@ -104,7 +104,7 @@ const features = [
 
     <!-- Footer -->
     <footer class="py-6 px-4 text-center text-sm text-zinc-600 border-t border-zinc-800">
-      <p>TuneLayer - Your taste, your data, your rules.</p>
+      <p>TuneCraft - Your taste, your data, your rules.</p>
     </footer>
   </div>
 </template>

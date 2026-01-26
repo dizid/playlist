@@ -12,7 +12,6 @@ export const useLibraryStore = defineStore('library', () => {
 
   // Getters
   const songCount = computed(() => songs.value.length)
-  const lovedSongs = computed(() => songs.value.filter(s => s.rating === 'loved'))
   const topSongs = computed(() =>
     [...songs.value]
       .sort((a, b) => b.popularity - a.popularity)
@@ -83,20 +82,6 @@ export const useLibraryStore = defineStore('library', () => {
         songs.value.push(newSong)
       }
       return newSong
-    } catch (e) {
-      error.value = e.message
-      throw e
-    }
-  }
-
-  async function rateSong(songId, rating) {
-    try {
-      await api.rateSong(songId, rating)
-
-      const song = songs.value.find(s => s.id === songId)
-      if (song) {
-        song.rating = rating
-      }
     } catch (e) {
       error.value = e.message
       throw e
@@ -202,7 +187,6 @@ export const useLibraryStore = defineStore('library', () => {
     enrichmentStatus,
     // Getters
     songCount,
-    lovedSongs,
     topSongs,
     availableGenres,
     availableMoods,
@@ -210,7 +194,6 @@ export const useLibraryStore = defineStore('library', () => {
     fetchSongs,
     fetchPlaylists,
     addSong,
-    rateSong,
     incrementPlayCount,
     deleteSong,
     createPlaylist,

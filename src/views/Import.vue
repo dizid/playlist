@@ -1,41 +1,113 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useLibraryStore } from '../stores/library'
+import { api } from '../services/api'
+import {
+  isPushSupported,
+  getPermissionStatus,
+  subscribeToPush,
+  isSubscribed,
+  initializePush
+} from '../services/push-notifications'
 
 const auth = useAuthStore()
 const library = useLibraryStore()
 
 const activeTab = ref('youtube')
-const isImporting = ref(false)
-const isEnriching = ref(false)
+const isCollectingData = ref(false)
+const isSendingToServer = ref(false)
+const isImporting = computed(() => isCollectingData.value || isSendingToServer.value)
 const importProgress = ref({ current: 0, total: 0, message: '' })
 const importResults = ref(null)
-const enrichmentResults = ref(null)
 
-// Trigger enrichment after import completes
-async function triggerEnrichment() {
-  if (isEnriching.value) return
+// Active background job tracking
+const activeJob = ref(null)
+const jobPollingInterval = ref(null)
 
-  isEnriching.value = true
-  enrichmentResults.value = null
+// Push notification state
+const pushSupported = ref(false)
+const pushPermission = ref('default')
+const pushSubscribed = ref(false)
 
+// Email for notifications
+const notifyEmail = ref('')
+
+// Initialize push notifications
+onMounted(async () => {
+  pushSupported.value = isPushSupported()
+  pushPermission.value = getPermissionStatus()
+  pushSubscribed.value = await isSubscribed()
+
+  // Initialize service worker
+  if (pushSupported.value) {
+    await initializePush()
+    pushSubscribed.value = await isSubscribed()
+  }
+
+  // Check for active import job
+  await checkActiveJob()
+})
+
+onUnmounted(() => {
+  if (jobPollingInterval.value) {
+    clearInterval(jobPollingInterval.value)
+  }
+})
+
+async function checkActiveJob() {
   try {
-    const result = await library.enrichSongs({ all: true })
-    enrichmentResults.value = {
-      enriched: result.enriched,
-      failed: result.failed,
-      remaining: result.remaining
-    }
-
-    // If there are more pending, continue enriching
-    if (result.remaining > 0) {
-      setTimeout(triggerEnrichment, 500)
+    const result = await api.getActiveImportJob()
+    if (result.active && result.job) {
+      activeJob.value = result.job
+      // Start polling if job is in progress
+      if (result.job.status === 'pending' || result.job.status === 'processing') {
+        startJobPolling()
+      }
     }
   } catch (e) {
-    console.error('Enrichment error:', e)
-  } finally {
-    isEnriching.value = false
+    console.error('Failed to check active job:', e)
+  }
+}
+
+function startJobPolling() {
+  if (jobPollingInterval.value) return
+
+  jobPollingInterval.value = setInterval(async () => {
+    if (!activeJob.value) {
+      clearInterval(jobPollingInterval.value)
+      jobPollingInterval.value = null
+      return
+    }
+
+    try {
+      const job = await api.getImportJobStatus(activeJob.value.id)
+      activeJob.value = job
+
+      // Stop polling when job completes
+      if (job.status === 'completed' || job.status === 'failed') {
+        clearInterval(jobPollingInterval.value)
+        jobPollingInterval.value = null
+
+        // Refresh library
+        if (job.status === 'completed') {
+          library.fetchSongs()
+        }
+      }
+    } catch (e) {
+      console.error('Failed to poll job status:', e)
+    }
+  }, 2000) // Poll every 2 seconds
+}
+
+async function enablePushNotifications() {
+  try {
+    await subscribeToPush()
+    pushSubscribed.value = true
+    pushPermission.value = 'granted'
+  } catch (e) {
+    console.error('Failed to enable push:', e)
+    alert(e.message || 'Failed to enable notifications')
   }
 }
 
@@ -45,8 +117,65 @@ const tabs = [
   { id: 'takeout', label: 'Google Takeout', icon: '📦' }
 ]
 
+// Channels that typically don't have music content
+const BLOCKED_CHANNELS = [
+  'Coin Bureau', 'InvestAnswers', 'Real Vision', 'Benjamin Cowen',
+  'Binance', 'RTL Z', 'BR24', 'TED', 'TEDx Talks', 'CoinDesk',
+  'Bloomberg', 'CNBC', 'CNN', 'BBC', 'Reuters', 'NPR'
+]
+
 // Check if YouTube is connected
 const needsYouTubeConnection = computed(() => !auth.hasYouTubeAccess)
+
+// Submit songs for background processing
+async function submitBackgroundImport(type, songs) {
+  if (songs.length === 0) {
+    importResults.value = {
+      success: false,
+      message: 'No songs to import'
+    }
+    return
+  }
+
+  isSendingToServer.value = true
+  importProgress.value = { current: 0, total: 0, message: 'Starting background import...' }
+
+  try {
+    const result = await api.createImportJob({
+      type,
+      songs,
+      notifyEmail: !!notifyEmail.value,
+      notifyPush: pushSubscribed.value,
+      email: notifyEmail.value || null
+    })
+
+    activeJob.value = {
+      id: result.jobId,
+      status: result.status,
+      total_items: result.totalItems,
+      processed_items: 0
+    }
+
+    importResults.value = {
+      success: true,
+      isBackground: true,
+      message: `${result.totalItems} songs queued for import. You can close this page - we'll notify you when done!`,
+      jobId: result.jobId
+    }
+
+    // Start polling
+    startJobPolling()
+  } catch (e) {
+    console.error('Failed to start background import:', e)
+    importResults.value = {
+      success: false,
+      message: e.message || 'Failed to start import'
+    }
+  } finally {
+    isSendingToServer.value = false
+    importProgress.value = { current: 0, total: 0, message: '' }
+  }
+}
 
 async function importYouTubePlaylists() {
   if (!auth.youtubeToken) {
@@ -54,9 +183,11 @@ async function importYouTubePlaylists() {
     return
   }
 
-  isImporting.value = true
+  isCollectingData.value = true
   importProgress.value = { current: 0, total: 0, message: 'Fetching playlists...' }
   importResults.value = null
+
+  const collectedSongs = []
 
   try {
     // Fetch user's playlists
@@ -76,8 +207,7 @@ async function importYouTubePlaylists() {
     const playlistsData = await playlistsResponse.json()
     const playlists = playlistsData.items || []
 
-    let totalImported = 0
-    let totalSkipped = 0
+    let totalNonMusic = 0
 
     // Process each playlist
     for (let i = 0; i < playlists.length; i++) {
@@ -108,51 +238,85 @@ async function importYouTubePlaylists() {
         const itemsData = await itemsResponse.json()
         const items = itemsData.items || []
 
-        // Import each video as a song
-        for (const item of items) {
-          try {
-            const videoId = item.snippet?.resourceId?.videoId
-            if (!videoId) continue
+        // Collect video IDs for batch category lookup
+        const videoIds = items
+          .map(item => item.snippet?.resourceId?.videoId)
+          .filter(Boolean)
 
-            // Parse artist from title (common format: "Artist - Song Title")
-            const title = item.snippet.title || 'Unknown'
-            let artist = null
-            let songTitle = title
+        if (videoIds.length === 0) {
+          nextPageToken = itemsData.nextPageToken
+          continue
+        }
 
-            if (title.includes(' - ')) {
-              const parts = title.split(' - ')
-              artist = parts[0].trim()
-              songTitle = parts.slice(1).join(' - ').trim()
-            }
+        // Fetch video details to get category
+        const detailsUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
+        detailsUrl.searchParams.set('part', 'snippet')
+        detailsUrl.searchParams.set('id', videoIds.join(','))
 
-            await library.addSong({
-              youtubeId: videoId,
-              title: songTitle,
-              artist: artist,
-              channel: item.snippet.videoOwnerChannelTitle || null,
-              thumbnail: item.snippet.thumbnails?.default?.url || null,
-              source: 'youtube'
-            })
-            totalImported++
-          } catch (e) {
-            totalSkipped++
+        const detailsResponse = await fetch(detailsUrl, {
+          headers: { Authorization: `Bearer ${auth.youtubeToken}` }
+        })
+
+        let videoDetails = {}
+        if (detailsResponse.ok) {
+          const detailsData = await detailsResponse.json()
+          for (const video of detailsData.items || []) {
+            videoDetails[video.id] = video.snippet
           }
+        }
+
+        // Collect each video (with filtering)
+        for (const item of items) {
+          const videoId = item.snippet?.resourceId?.videoId
+          if (!videoId) continue
+
+          const details = videoDetails[videoId]
+          const channelTitle = details?.channelTitle || item.snippet.videoOwnerChannelTitle || ''
+
+          // Filter: Skip non-music videos (category 10 = Music)
+          if (details && details.categoryId !== '10') {
+            totalNonMusic++
+            continue
+          }
+
+          // Filter: Skip blocked channels
+          if (BLOCKED_CHANNELS.some(ch => channelTitle.includes(ch))) {
+            totalNonMusic++
+            continue
+          }
+
+          // Parse artist from title
+          const title = details?.title || item.snippet.title || 'Unknown'
+          let artist = null
+          let songTitle = title
+
+          if (title.includes(' - ')) {
+            const parts = title.split(' - ')
+            artist = parts[0].trim()
+            songTitle = parts.slice(1).join(' - ').trim()
+          }
+
+          collectedSongs.push({
+            youtubeId: videoId,
+            title: songTitle,
+            artist: artist,
+            channel: channelTitle || null,
+            thumbnail: details?.thumbnails?.default?.url || item.snippet.thumbnails?.default?.url || null,
+            source: 'youtube'
+          })
         }
 
         nextPageToken = itemsData.nextPageToken
       } while (nextPageToken)
     }
 
-    importResults.value = {
-      success: true,
-      imported: totalImported,
-      skipped: totalSkipped,
-      message: `Imported ${totalImported} songs from ${playlists.length} playlists`
-    }
+    isCollectingData.value = false
 
-    // Trigger genre/mood enrichment
-    if (totalImported > 0) {
-      triggerEnrichment()
+    // Submit for background processing
+    await submitBackgroundImport('youtube_playlists', collectedSongs)
+
+    if (totalNonMusic > 0 && importResults.value?.success) {
+      importResults.value.message += ` (${totalNonMusic} non-music videos filtered)`
     }
 
   } catch (error) {
@@ -161,9 +325,7 @@ async function importYouTubePlaylists() {
       success: false,
       message: error.message || 'Import failed'
     }
-  } finally {
-    isImporting.value = false
-    importProgress.value = { current: 0, total: 0, message: '' }
+    isCollectingData.value = false
   }
 }
 
@@ -173,13 +335,14 @@ async function importYouTubeLikes() {
     return
   }
 
-  isImporting.value = true
+  isCollectingData.value = true
   importProgress.value = { current: 0, total: 0, message: 'Fetching liked videos...' }
   importResults.value = null
 
+  const collectedSongs = []
+  let totalSkipped = 0
+
   try {
-    let totalImported = 0
-    let totalSkipped = 0
     let nextPageToken = null
 
     do {
@@ -207,50 +370,48 @@ async function importYouTubeLikes() {
       const videos = data.items || []
 
       importProgress.value = {
-        current: totalImported,
+        current: collectedSongs.length,
         total: data.pageInfo?.totalResults || 0,
-        message: `Importing liked videos...`
+        message: 'Collecting music from liked videos...'
       }
 
       for (const video of videos) {
-        try {
-          const title = video.snippet.title || 'Unknown'
-          let artist = null
-          let songTitle = title
-
-          if (title.includes(' - ')) {
-            const parts = title.split(' - ')
-            artist = parts[0].trim()
-            songTitle = parts.slice(1).join(' - ').trim()
-          }
-
-          await library.addSong({
-            youtubeId: video.id,
-            title: songTitle,
-            artist: artist,
-            channel: video.snippet.channelTitle || null,
-            thumbnail: video.snippet.thumbnails?.default?.url || null,
-            source: 'youtube'
-          })
-          totalImported++
-        } catch (e) {
+        // Skip non-music videos (categoryId 10 = Music)
+        if (video.snippet.categoryId !== '10') {
           totalSkipped++
+          continue
         }
+
+        const title = video.snippet.title || 'Unknown'
+        let artist = null
+        let songTitle = title
+
+        if (title.includes(' - ')) {
+          const parts = title.split(' - ')
+          artist = parts[0].trim()
+          songTitle = parts.slice(1).join(' - ').trim()
+        }
+
+        collectedSongs.push({
+          youtubeId: video.id,
+          title: songTitle,
+          artist: artist,
+          channel: video.snippet.channelTitle || null,
+          thumbnail: video.snippet.thumbnails?.default?.url || null,
+          source: 'youtube'
+        })
       }
 
       nextPageToken = data.nextPageToken
     } while (nextPageToken)
 
-    importResults.value = {
-      success: true,
-      imported: totalImported,
-      skipped: totalSkipped,
-      message: `Imported ${totalImported} liked videos`
-    }
+    isCollectingData.value = false
 
-    // Trigger genre/mood enrichment
-    if (totalImported > 0) {
-      triggerEnrichment()
+    // Submit for background processing
+    await submitBackgroundImport('youtube_likes', collectedSongs)
+
+    if (totalSkipped > 0 && importResults.value?.success) {
+      importResults.value.message += ` (${totalSkipped} non-music videos filtered)`
     }
 
   } catch (error) {
@@ -259,9 +420,7 @@ async function importYouTubeLikes() {
       success: false,
       message: error.message || 'Import failed'
     }
-  } finally {
-    isImporting.value = false
-    importProgress.value = { current: 0, total: 0, message: '' }
+    isCollectingData.value = false
   }
 }
 
@@ -269,35 +428,73 @@ function handleShazamFile(event) {
   const file = event.target.files?.[0]
   if (!file) return
 
-  isImporting.value = true
+  isCollectingData.value = true
   importProgress.value = { current: 0, total: 0, message: 'Parsing Shazam CSV...' }
   importResults.value = null
 
   const reader = new FileReader()
   reader.onload = async (e) => {
     try {
-      const csv = e.target?.result
-      const lines = csv.split('\n')
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+      let csv = e.target?.result
+      // Remove BOM if present
+      if (csv.charCodeAt(0) === 0xFEFF) {
+        csv = csv.slice(1)
+      }
+      let lines = csv.split('\n').map(l => l.trim()).filter(l => l)
 
-      const titleIndex = headers.findIndex(h => h.includes('title') || h.includes('name'))
-      const artistIndex = headers.findIndex(h => h.includes('artist'))
-
-      if (titleIndex === -1) {
-        throw new Error('Could not find title column in CSV')
+      // Skip metadata lines
+      while (lines.length > 0 && !lines[0].includes(',')) {
+        lines = lines.slice(1)
       }
 
-      let totalImported = 0
-      let totalSkipped = 0
+      if (lines.length === 0) {
+        throw new Error('CSV file appears to be empty')
+      }
+
+      // Parse headers
+      const headerLine = lines[0]
+      const headers = headerLine.split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase())
+
+      const titleIndex = headers.findIndex(h =>
+        h === 'title' || h === 'name' || h === 'track' || h === 'song' ||
+        h.includes('title') || h.includes('name')
+      )
+      const artistIndex = headers.findIndex(h =>
+        h === 'artist' || h.includes('artist')
+      )
+
+      if (titleIndex === -1) {
+        throw new Error(`Could not find title column in CSV. Found headers: ${headers.join(', ')}`)
+      }
+
+      const collectedSongs = []
+
+      // Helper to parse CSV line properly
+      function parseCSVLine(line) {
+        const result = []
+        let current = ''
+        let inQuotes = false
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i]
+          if (char === '"') {
+            inQuotes = !inQuotes
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim())
+            current = ''
+          } else {
+            current += char
+          }
+        }
+        result.push(current.trim())
+        return result
+      }
 
       for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim()
+        const line = lines[i]
         if (!line) continue
 
-        // Parse CSV line (handle quoted values)
-        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || []
-        const cleanValues = values.map(v => v.replace(/^"|"$/g, '').trim())
-
+        const cleanValues = parseCSVLine(line)
         const title = cleanValues[titleIndex]
         const artist = artistIndex >= 0 ? cleanValues[artistIndex] : null
 
@@ -306,43 +503,29 @@ function handleShazamFile(event) {
         importProgress.value = {
           current: i,
           total: lines.length - 1,
-          message: `Processing: ${title}`
+          message: `Parsing: ${title}`
         }
 
-        try {
-          // For Shazam imports, we don't have YouTube IDs yet
-          // We'll use a placeholder that should be resolved later
-          await library.addSong({
-            youtubeId: `shazam_${Date.now()}_${i}`,
-            title: title,
-            artist: artist,
-            source: 'shazam'
-          })
-          totalImported++
-        } catch (e) {
-          totalSkipped++
-        }
+        collectedSongs.push({
+          youtubeId: null, // Will be searched server-side
+          title: title,
+          artist: artist,
+          source: 'shazam'
+        })
       }
 
-      importResults.value = {
-        success: true,
-        imported: totalImported,
-        skipped: totalSkipped,
-        message: `Imported ${totalImported} songs from Shazam`
-      }
+      isCollectingData.value = false
 
-      // Trigger genre/mood enrichment
-      if (totalImported > 0) {
-        triggerEnrichment()
-      }
+      // Submit for background processing
+      await submitBackgroundImport('shazam', collectedSongs)
+
     } catch (error) {
       console.error('Shazam import error:', error)
       importResults.value = {
         success: false,
         message: error.message || 'Failed to parse Shazam CSV'
       }
-    } finally {
-      isImporting.value = false
+      isCollectingData.value = false
     }
   }
   reader.readAsText(file)
@@ -352,7 +535,7 @@ function handleTakeoutFile(event) {
   const file = event.target.files?.[0]
   if (!file) return
 
-  isImporting.value = true
+  isCollectingData.value = true
   importProgress.value = { current: 0, total: 0, message: 'Parsing watch history...' }
   importResults.value = null
 
@@ -365,52 +548,35 @@ function handleTakeoutFile(event) {
       const matches = [...html.matchAll(videoRegex)]
       const uniqueIds = [...new Set(matches.map(m => m[1]))]
 
-      let totalImported = 0
-      let totalSkipped = 0
+      const collectedSongs = uniqueIds.map(videoId => ({
+        youtubeId: videoId,
+        title: `Video ${videoId}`, // Will be enriched later
+        source: 'takeout'
+      }))
 
-      for (let i = 0; i < uniqueIds.length; i++) {
-        const videoId = uniqueIds[i]
+      isCollectingData.value = false
 
-        importProgress.value = {
-          current: i + 1,
-          total: uniqueIds.length,
-          message: `Processing video ${i + 1} of ${uniqueIds.length}`
-        }
+      // Submit for background processing
+      await submitBackgroundImport('takeout', collectedSongs)
 
-        try {
-          await library.addSong({
-            youtubeId: videoId,
-            title: `Video ${videoId}`,  // Will be enriched later
-            source: 'takeout'
-          })
-          totalImported++
-        } catch (e) {
-          totalSkipped++
-        }
-      }
-
-      importResults.value = {
-        success: true,
-        imported: totalImported,
-        skipped: totalSkipped,
-        message: `Imported ${totalImported} videos from watch history`
-      }
-
-      // Trigger genre/mood enrichment
-      if (totalImported > 0) {
-        triggerEnrichment()
-      }
     } catch (error) {
       console.error('Takeout import error:', error)
       importResults.value = {
         success: false,
         message: error.message || 'Failed to parse watch history'
       }
-    } finally {
-      isImporting.value = false
+      isCollectingData.value = false
     }
   }
   reader.readAsText(file)
+}
+
+function dismissActiveJob() {
+  activeJob.value = null
+  if (jobPollingInterval.value) {
+    clearInterval(jobPollingInterval.value)
+    jobPollingInterval.value = null
+  }
 }
 </script>
 
@@ -418,48 +584,87 @@ function handleTakeoutFile(event) {
   <div class="p-6 lg:p-8">
     <h1 class="text-2xl font-bold text-white mb-6">Import Music</h1>
 
+    <!-- Active Background Job -->
+    <div
+      v-if="activeJob"
+      class="bg-indigo-900/30 border border-indigo-700 rounded-xl p-4 mb-6"
+    >
+      <div class="flex items-start justify-between">
+        <div class="flex items-center gap-4">
+          <div v-if="activeJob.status === 'processing' || activeJob.status === 'pending'" class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-400"></div>
+          <span v-else-if="activeJob.status === 'completed'" class="text-2xl">✅</span>
+          <span v-else class="text-2xl">❌</span>
+          <div>
+            <p class="font-medium text-white">
+              {{ activeJob.status === 'completed' ? 'Import complete!' :
+                 activeJob.status === 'failed' ? 'Import failed' :
+                 'Import in progress...' }}
+            </p>
+            <p class="text-sm text-zinc-400">
+              {{ activeJob.processed_items || 0 }} / {{ activeJob.total_items }} processed
+              <span v-if="activeJob.inserted_items"> • {{ activeJob.inserted_items }} added</span>
+              <span v-if="activeJob.skipped_items"> • {{ activeJob.skipped_items }} skipped</span>
+            </p>
+            <p v-if="activeJob.status === 'pending' || activeJob.status === 'processing'" class="text-xs text-zinc-500 mt-1">
+              You can close this page - we'll notify you when done
+            </p>
+            <p v-if="activeJob.error_message" class="text-sm text-red-400 mt-1">
+              {{ activeJob.error_message }}
+            </p>
+          </div>
+        </div>
+        <button
+          v-if="activeJob.status === 'completed' || activeJob.status === 'failed'"
+          @click="dismissActiveJob"
+          class="text-zinc-400 hover:text-white"
+        >✕</button>
+      </div>
+      <!-- Progress bar -->
+      <div v-if="activeJob.total_items > 0" class="mt-3">
+        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            class="h-full transition-all duration-300"
+            :class="activeJob.status === 'failed' ? 'bg-red-500' : 'bg-indigo-500'"
+            :style="{ width: `${((activeJob.processed_items || 0) / activeJob.total_items) * 100}%` }"
+          ></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Import Results Banner -->
     <div
-      v-if="importResults"
+      v-if="importResults && !importResults.isBackground"
       :class="importResults.success ? 'bg-green-900/50 border-green-700' : 'bg-red-900/50 border-red-700'"
       class="border rounded-xl p-4 mb-6 flex items-center justify-between"
     >
       <div class="flex items-center gap-3">
         <span class="text-2xl">{{ importResults.success ? '✅' : '❌' }}</span>
-        <div>
-          <p class="font-medium text-white">{{ importResults.message }}</p>
-          <p v-if="importResults.skipped" class="text-sm text-zinc-400">
-            {{ importResults.skipped }} items skipped (duplicates or errors)
-          </p>
-        </div>
+        <p class="font-medium text-white">{{ importResults.message }}</p>
       </div>
       <button @click="importResults = null" class="text-zinc-400 hover:text-white">✕</button>
     </div>
 
-    <!-- Enrichment Status -->
+    <!-- Background Import Success -->
     <div
-      v-if="isEnriching || enrichmentResults"
-      class="bg-indigo-900/30 border border-indigo-700 rounded-xl p-4 mb-6"
+      v-if="importResults?.isBackground"
+      class="bg-green-900/50 border border-green-700 rounded-xl p-4 mb-6"
     >
       <div class="flex items-center gap-3">
-        <div v-if="isEnriching" class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400"></div>
-        <span v-else class="text-xl">🏷️</span>
+        <span class="text-2xl">🚀</span>
         <div>
-          <p class="font-medium text-white">
-            {{ isEnriching ? 'Enriching metadata...' : 'Metadata enrichment complete' }}
+          <p class="font-medium text-white">{{ importResults.message }}</p>
+          <p v-if="pushSubscribed" class="text-sm text-zinc-400 mt-1">
+            You'll receive a browser notification when complete.
           </p>
-          <p v-if="enrichmentResults" class="text-sm text-zinc-400">
-            {{ enrichmentResults.enriched }} songs tagged with genres/moods
-            <span v-if="enrichmentResults.remaining > 0">
-              ({{ enrichmentResults.remaining }} remaining)
-            </span>
+          <p v-if="notifyEmail" class="text-sm text-zinc-400 mt-1">
+            We'll also email you at {{ notifyEmail }} (check spam folder if needed)
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Progress Bar -->
-    <div v-if="isImporting" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+    <!-- Progress Bar (data collection phase) -->
+    <div v-if="isCollectingData || isSendingToServer" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
       <div class="flex items-center gap-4">
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
         <div class="flex-1">
@@ -476,6 +681,43 @@ function handleTakeoutFile(event) {
             </p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Notification Settings -->
+    <div v-if="!activeJob" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+      <h3 class="font-semibold text-white mb-3">Notification Settings</h3>
+      <p class="text-sm text-zinc-400 mb-4">Get notified when your import completes (you can close this page)</p>
+
+      <div class="space-y-3">
+        <!-- Push Notifications -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>🔔</span>
+            <span class="text-white">Browser notifications</span>
+          </div>
+          <div v-if="!pushSupported" class="text-sm text-zinc-500">Not supported</div>
+          <div v-else-if="pushSubscribed" class="text-sm text-green-400">Enabled</div>
+          <button
+            v-else
+            @click="enablePushNotifications"
+            class="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          >
+            Enable
+          </button>
+        </div>
+
+        <!-- Email -->
+        <div class="flex items-center gap-3">
+          <span>📧</span>
+          <input
+            v-model="notifyEmail"
+            type="email"
+            placeholder="Email (optional)"
+            class="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 text-sm"
+          />
+        </div>
+        <p class="text-xs text-zinc-500 pl-7">Check your spam folder if you don't see the email</p>
       </div>
     </div>
 
@@ -533,24 +775,24 @@ function handleTakeoutFile(event) {
           </p>
           <button
             @click="importYouTubePlaylists"
-            :disabled="isImporting"
+            :disabled="isImporting || !!activeJob"
             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
-            {{ isImporting ? 'Importing...' : 'Import Playlists' }}
+            {{ isCollectingData ? 'Collecting...' : isSendingToServer ? 'Starting...' : 'Import Playlists' }}
           </button>
         </div>
 
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-          <h3 class="font-semibold text-white mb-2">Import Liked Videos</h3>
+          <h3 class="font-semibold text-white mb-2">Import Liked Music</h3>
           <p class="text-sm text-zinc-400 mb-4">
-            Import all videos you've liked on YouTube
+            Import music videos you've liked on YouTube
           </p>
           <button
             @click="importYouTubeLikes"
-            :disabled="isImporting"
+            :disabled="isImporting || !!activeJob"
             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
-            {{ isImporting ? 'Importing...' : 'Import Liked Videos' }}
+            {{ isCollectingData ? 'Collecting...' : isSendingToServer ? 'Starting...' : 'Import Liked Music' }}
           </button>
         </div>
       </div>
@@ -570,7 +812,7 @@ function handleTakeoutFile(event) {
           type="file"
           accept=".csv"
           @change="handleShazamFile"
-          :disabled="isImporting"
+          :disabled="isImporting || !!activeJob"
           class="block w-full text-sm text-zinc-400
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0
@@ -597,7 +839,7 @@ function handleTakeoutFile(event) {
           type="file"
           accept=".html"
           @change="handleTakeoutFile"
-          :disabled="isImporting"
+          :disabled="isImporting || !!activeJob"
           class="block w-full text-sm text-zinc-400
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0

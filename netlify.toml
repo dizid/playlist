@@ -12,6 +12,12 @@
   port = 8888
   autoLaunch = false
 
+# Neon Auth proxy - must come before SPA fallback
+[[redirects]]
+  from = "/neon/*"
+  to = "/.netlify/functions/neon-auth"
+  status = 200
+
 # SPA fallback - serve index.html for all routes so Vue Router can handle them
 [[redirects]]
   from = "/*"
