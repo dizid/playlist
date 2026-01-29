@@ -7,10 +7,13 @@ export default async (req: Request, context: Context) => {
     return new Response('NEON_AUTH_URL not configured', { status: 500 })
   }
 
-  // Strip /neon prefix, forward to Neon Auth
+  // Strip /neon prefix, add /neondb/auth prefix, forward to Neon Auth
   const url = new URL(req.url)
   const path = url.pathname.replace('/neon', '')
-  const targetUrl = `${NEON_AUTH_URL}${path}${url.search}`
+  // NEON_AUTH_URL is base URL, we need to add /neondb/auth prefix for the SDK paths
+  const targetUrl = `${NEON_AUTH_URL}/neondb/auth${path}${url.search}`
+
+  console.log('[Neon Auth Proxy] Forwarding:', req.method, path, '→', targetUrl)
 
   // Only forward safe headers to prevent header injection
   const safeHeaders: HeadersInit = {
