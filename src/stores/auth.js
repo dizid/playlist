@@ -38,11 +38,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // This redirects to Neon Auth -> Google OAuth
       // Session will be established via HTTP-only cookie on callback
-      authClient.signIn.social({
+      await authClient.signIn.social({
         provider: 'google',
         callbackURL: `${window.location.origin}/auth/callback`
       })
     } catch (e) {
+      console.error('[Auth Store] loginWithGoogle error:', e)
       error.value = e.message
       isLoading.value = false
     }
@@ -54,11 +55,12 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      authClient.signIn.social({
+      await authClient.signIn.social({
         provider: 'github',
         callbackURL: `${window.location.origin}/auth/callback`
       })
     } catch (e) {
+      console.error('[Auth Store] loginWithGithub error:', e)
       error.value = e.message
       isLoading.value = false
     }

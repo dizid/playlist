@@ -41,11 +41,31 @@ export const authClient = {
 
   // Social sign-in methods
   signIn: {
-    social({ provider, callbackURL }) {
-      neonAuth.signIn.social({
-        provider,
-        callbackURL
-      })
+    async social({ provider, callbackURL }) {
+      try {
+        console.log('[Auth] Starting social sign-in:', { provider, callbackURL })
+        const result = await neonAuth.signIn.social({
+          provider,
+          callbackURL
+        })
+
+        console.log('[Auth] signIn.social result:', result)
+
+        // If Better Auth returns a redirect URL instead of auto-redirecting, handle it
+        if (result?.url) {
+          window.location.href = result.url
+        }
+
+        // If there's an error in the result, throw it
+        if (result?.error) {
+          throw new Error(result.error.message || 'Sign-in failed')
+        }
+
+        return result
+      } catch (error) {
+        console.error('[Auth] signIn.social error:', error)
+        throw error
+      }
     }
   },
 

@@ -1,5 +1,5 @@
 // Session validation for Neon Auth
-// Validates JWT tokens from Authorization header
+// Validates JWT tokens by calling Neon Auth's session endpoint
 
 export interface Session {
   user: {
@@ -14,35 +14,93 @@ export interface Session {
   }
 }
 
+// Cache verified sessions briefly to reduce auth calls (5 min TTL)
+const sessionCache = new Map<string, { session: Session; expiresAt: number }>()
+const CACHE_TTL_MS = 5 * 60 * 1000
+
 export async function validateSession(req: Request): Promise<Session | null> {
-  // Simple approach: Get userId from X-User-Id header
-  // The frontend sends this from the authenticated session
-  // For production, add proper JWT signature verification
-  const userId = req.headers.get('X-User-Id')
-
-  if (!userId) {
-    console.error('No X-User-Id header')
-    return null
-  }
-
-  // Also require Authorization header to ensure some auth is present
+  // Get token from Authorization header
   const authHeader = req.headers.get('Authorization')
   if (!authHeader?.startsWith('Bearer ')) {
-    console.error('No Bearer token')
+    console.error('No Bearer token in Authorization header')
     return null
   }
 
-  return {
-    user: {
-      id: userId,
-      email: '',
-      name: '',
-      image: ''
-    },
-    session: {
-      id: userId,
-      expiresAt: ''
+  const token = authHeader.slice(7) // Remove "Bearer " prefix
+  if (!token) {
+    console.error('Empty token')
+    return null
+  }
+
+  // Check cache first
+  const cached = sessionCache.get(token)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.session
+  }
+
+  // Verify token with Neon Auth
+  const neonAuthUrl = process.env.NEON_AUTH_URL
+  if (!neonAuthUrl) {
+    console.error('NEON_AUTH_URL not configured')
+    return null
+  }
+
+  try {
+    // Call Neon Auth session endpoint to verify token and get user data
+    const response = await fetch(`${neonAuthUrl}/neondb/auth/session`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      console.error('Token verification failed:', response.status)
+      return null
     }
+
+    const data = await response.json()
+
+    // Neon Auth returns { session: {...}, user: {...} }
+    if (!data.session || !data.user) {
+      console.error('Invalid session response from Neon Auth')
+      return null
+    }
+
+    const session: Session = {
+      user: {
+        id: data.user.id,
+        email: data.user.email || '',
+        name: data.user.name || '',
+        image: data.user.image || ''
+      },
+      session: {
+        id: data.session.id || data.session.userId,
+        expiresAt: data.session.expiresAt || ''
+      }
+    }
+
+    // Cache the verified session
+    sessionCache.set(token, {
+      session,
+      expiresAt: Date.now() + CACHE_TTL_MS
+    })
+
+    // Cleanup old cache entries periodically
+    if (sessionCache.size > 1000) {
+      const now = Date.now()
+      for (const [key, value] of sessionCache) {
+        if (value.expiresAt < now) {
+          sessionCache.delete(key)
+        }
+      }
+    }
+
+    return session
+  } catch (error) {
+    console.error('Session verification error:', error)
+    return null
   }
 }
 
