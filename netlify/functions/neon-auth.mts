@@ -15,13 +15,18 @@ export default async (req: Request, context: Context) => {
 
   console.log('[Neon Auth Proxy] Forwarding:', req.method, path, '→', targetUrl)
 
-  // Only forward safe headers to prevent header injection
+  // Forward safe headers needed for auth
   const safeHeaders: HeadersInit = {
     'Content-Type': req.headers.get('Content-Type') || 'application/json'
   }
   const cookie = req.headers.get('Cookie')
   if (cookie) {
     safeHeaders['Cookie'] = cookie
+  }
+  // Origin header is required by Better Auth for callback URL resolution
+  const origin = req.headers.get('Origin')
+  if (origin) {
+    safeHeaders['Origin'] = origin
   }
 
   const response = await fetch(targetUrl, {
