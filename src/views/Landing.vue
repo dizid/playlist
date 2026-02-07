@@ -39,7 +39,7 @@ const features = [
 <template>
   <div class="min-h-screen flex flex-col">
     <!-- Hero -->
-    <div class="flex-1 flex flex-col items-center justify-center px-4 py-16">
+    <div class="flex-1 flex flex-col items-center justify-center px-4 py-16" role="banner">
       <div class="text-center max-w-2xl mx-auto">
         <!-- Logo -->
         <div class="flex items-center justify-center gap-3 mb-8">
@@ -60,6 +60,7 @@ const features = [
           <button
             @click="auth.loginWithGoogle"
             :disabled="auth.isLoading"
+            aria-label="Sign in with Google"
             class="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50"
           >
             <svg class="w-6 h-6" viewBox="0 0 24 24">
@@ -74,6 +75,7 @@ const features = [
           <button
             @click="auth.loginWithGithub"
             :disabled="auth.isLoading"
+            aria-label="Sign in with GitHub"
             class="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors disabled:opacity-50"
           >
             <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
@@ -90,7 +92,7 @@ const features = [
     </div>
 
     <!-- Features -->
-    <div class="border-t border-zinc-800 bg-zinc-900/50 py-16 px-4">
+    <div class="border-t border-zinc-800 bg-zinc-900/50 py-16 px-4" role="main">
       <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
         <div v-for="feature in features" :key="feature.title" class="flex gap-4">
           <span class="text-3xl">{{ feature.icon }}</span>

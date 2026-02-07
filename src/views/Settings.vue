@@ -74,7 +74,7 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
+  <div class="p-6 lg:p-8" role="main">
     <h1 class="text-2xl font-bold text-white mb-6">Settings</h1>
 
     <!-- Account -->
@@ -129,6 +129,7 @@ async function confirmDelete() {
         <button
           @click="exportLibrary"
           :disabled="isExporting"
+          aria-label="Export library as JSON"
           class="w-full text-left p-3 bg-zinc-800 rounded-lg text-white hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
         >
           <span>Export library (JSON)</span>
@@ -138,6 +139,7 @@ async function confirmDelete() {
 
         <button
           @click="openDeleteModal"
+          aria-label="Delete all data"
           class="w-full text-left p-3 bg-zinc-800 rounded-lg text-red-400 hover:bg-zinc-700 transition-colors"
         >
           Delete all data
@@ -149,6 +151,9 @@ async function confirmDelete() {
     <div
       v-if="showDeleteModal"
       class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirm deletion"
       @click.self="closeDeleteModal"
     >
       <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-md w-full">
@@ -171,6 +176,7 @@ async function confirmDelete() {
           v-model="deleteConfirmation"
           type="text"
           placeholder="Type DELETE"
+          aria-label="Type DELETE to confirm deletion"
           class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 mb-4"
           @keyup.enter="confirmDelete"
         />

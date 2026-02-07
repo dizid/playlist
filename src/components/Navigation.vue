@@ -31,11 +31,12 @@ const navItems = [
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-3 py-4 space-y-1">
+      <nav class="flex-1 px-3 py-4 space-y-1" role="navigation" aria-label="Main navigation">
         <router-link
           v-for="item in navItems"
           :key="item.path"
           :to="item.path"
+          :aria-label="item.name"
           class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
           :class="$route.path === item.path
             ? 'bg-indigo-600 text-white'
@@ -47,7 +48,7 @@ const navItems = [
       </nav>
 
       <!-- User section -->
-      <div class="p-4 border-t border-zinc-800">
+      <div class="p-4 border-t border-zinc-800" aria-label="User menu">
         <div class="flex items-center gap-3">
           <img
             v-if="auth.userPicture"
@@ -62,6 +63,7 @@ const navItems = [
         </div>
         <button
           @click="handleLogout"
+          aria-label="Log out"
           class="w-full mt-3 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
         >
           Sign out

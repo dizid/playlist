@@ -79,12 +79,12 @@ function cancel() {
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="cancel">
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="tag-editor-title" @click.self="cancel">
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md">
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-white">Edit Tags</h3>
-        <button @click="cancel" class="text-zinc-500 hover:text-white">
+        <h3 id="tag-editor-title" class="text-lg font-semibold text-white">Edit Tags</h3>
+        <button @click="cancel" aria-label="Close tag editor" class="text-zinc-500 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
@@ -113,6 +113,8 @@ function cancel() {
             v-for="genre in genreOptions"
             :key="genre"
             @click="toggleGenre(genre)"
+            :aria-pressed="selectedGenres.includes(genre)"
+            :aria-label="'Genre: ' + genre"
             :class="[
               'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
               selectedGenres.includes(genre)
@@ -133,6 +135,8 @@ function cancel() {
             v-for="mood in moodOptions"
             :key="mood"
             @click="toggleMood(mood)"
+            :aria-pressed="selectedMoods.includes(mood)"
+            :aria-label="'Mood: ' + mood"
             :class="[
               'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
               selectedMoods.includes(mood)

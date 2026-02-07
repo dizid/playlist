@@ -581,13 +581,14 @@ function dismissActiveJob() {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
+  <div class="p-6 lg:p-8" role="main">
     <h1 class="text-2xl font-bold text-white mb-6">Import Music</h1>
 
     <!-- Active Background Job -->
     <div
       v-if="activeJob"
       class="bg-indigo-900/30 border border-indigo-700 rounded-xl p-4 mb-6"
+      aria-live="polite"
     >
       <div class="flex items-start justify-between">
         <div class="flex items-center gap-4">
@@ -616,6 +617,7 @@ function dismissActiveJob() {
         <button
           v-if="activeJob.status === 'completed' || activeJob.status === 'failed'"
           @click="dismissActiveJob"
+          aria-label="Dismiss import status"
           class="text-zinc-400 hover:text-white"
         >✕</button>
       </div>
@@ -664,7 +666,7 @@ function dismissActiveJob() {
     </div>
 
     <!-- Progress Bar (data collection phase) -->
-    <div v-if="isCollectingData || isSendingToServer" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6">
+    <div v-if="isCollectingData || isSendingToServer" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6" aria-live="polite">
       <div class="flex items-center gap-4">
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
         <div class="flex-1">
@@ -727,6 +729,8 @@ function dismissActiveJob() {
         v-for="tab in tabs"
         :key="tab.id"
         @click="activeTab = tab.id"
+        :aria-label="'Import from ' + tab.label"
+        :aria-pressed="activeTab === tab.id"
         :class="activeTab === tab.id
           ? 'bg-indigo-600 text-white'
           : 'bg-zinc-800 text-zinc-400 hover:text-white'"
@@ -813,6 +817,7 @@ function dismissActiveJob() {
           accept=".csv"
           @change="handleShazamFile"
           :disabled="isImporting || !!activeJob"
+          aria-label="Upload Shazam CSV file"
           class="block w-full text-sm text-zinc-400
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0
@@ -840,6 +845,7 @@ function dismissActiveJob() {
           accept=".html"
           @change="handleTakeoutFile"
           :disabled="isImporting || !!activeJob"
+          aria-label="Upload Google Takeout watch history file"
           class="block w-full text-sm text-zinc-400
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0

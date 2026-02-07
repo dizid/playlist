@@ -1,5 +1,6 @@
 // Neon Auth proxy - rewrites cookies to our domain for cross-domain auth
 import type { Context } from '@netlify/functions'
+import { validateOrigin, getAllowedOrigins } from './_shared/auth.ts'
 
 export default async (req: Request, context: Context) => {
   const NEON_AUTH_URL = Netlify.env.get('NEON_AUTH_URL')
@@ -24,9 +25,14 @@ export default async (req: Request, context: Context) => {
     safeHeaders['Cookie'] = cookie
   }
   // Origin header is required by Better Auth for callback URL resolution
-  const origin = req.headers.get('Origin')
-  if (origin) {
-    safeHeaders['Origin'] = origin
+  // Only forward if the origin is in our allowed list
+  const validOrigin = validateOrigin(req)
+  if (validOrigin) {
+    safeHeaders['Origin'] = validOrigin
+  } else if (req.headers.get('Origin')) {
+    // Origin was present but not allowed - reject the request
+    console.error('[Neon Auth Proxy] Blocked disallowed origin:', req.headers.get('Origin'))
+    return new Response('Forbidden', { status: 403 })
   }
 
   const response = await fetch(targetUrl, {

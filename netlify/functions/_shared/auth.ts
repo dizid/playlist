@@ -17,6 +17,8 @@ export interface Session {
 // Cache verified sessions briefly to reduce auth calls (5 min TTL)
 const sessionCache = new Map<string, { session: Session; expiresAt: number }>()
 const CACHE_TTL_MS = 5 * 60 * 1000
+let lastCacheCleanup = Date.now()
+const CLEANUP_INTERVAL_MS = 60 * 1000 // Run eviction at most once per minute
 
 export async function validateSession(req: Request): Promise<Session | null> {
   // Get token from Authorization header
@@ -82,14 +84,15 @@ export async function validateSession(req: Request): Promise<Session | null> {
     }
 
     // Cache the verified session
+    const now = Date.now()
     sessionCache.set(token, {
       session,
-      expiresAt: Date.now() + CACHE_TTL_MS
+      expiresAt: now + CACHE_TTL_MS
     })
 
-    // Cleanup old cache entries periodically
-    if (sessionCache.size > 1000) {
-      const now = Date.now()
+    // Evict expired entries periodically (every 60s or when cache grows large)
+    if (now - lastCacheCleanup > CLEANUP_INTERVAL_MS || sessionCache.size > 1000) {
+      lastCacheCleanup = now
       for (const [key, value] of sessionCache) {
         if (value.expiresAt < now) {
           sessionCache.delete(key)
@@ -132,4 +135,34 @@ export function errorResponse(message: string, status = 500) {
     JSON.stringify({ error: message }),
     { status, headers }
   )
+}
+
+// Allowed origins for CORS and auth proxy validation
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:8888',
+]
+
+/**
+ * Returns the list of allowed origins from ALLOWED_ORIGINS env var
+ * (comma-separated) merged with dev defaults.
+ */
+export function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    const parsed = envOrigins.split(',').map(o => o.trim()).filter(Boolean)
+    return [...new Set([...DEFAULT_ALLOWED_ORIGINS, ...parsed])]
+  }
+  return DEFAULT_ALLOWED_ORIGINS
+}
+
+/**
+ * Validates that a request Origin header is in the allowed list.
+ * Returns the origin string if valid, null otherwise.
+ */
+export function validateOrigin(req: Request): string | null {
+  const origin = req.headers.get('Origin')
+  if (!origin) return null
+  const allowed = getAllowedOrigins()
+  return allowed.includes(origin) ? origin : null
 }

@@ -24,7 +24,7 @@ const quickActions = [
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
+  <div class="p-6 lg:p-8" role="main">
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-2xl font-bold text-white">
@@ -58,6 +58,7 @@ const quickActions = [
           v-for="action in quickActions"
           :key="action.path"
           :to="action.path"
+          :aria-label="action.label"
           :class="action.color"
           class="flex items-center gap-3 p-4 rounded-xl text-white hover:opacity-90 transition-opacity"
         >

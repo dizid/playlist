@@ -28,7 +28,7 @@ const filteredSongs = computed(() => {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
+  <div class="p-6 lg:p-8" role="main">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
@@ -41,12 +41,13 @@ const filteredSongs = computed(() => {
         v-model="searchQuery"
         type="text"
         placeholder="Search songs..."
+        aria-label="Search songs"
         class="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
       />
     </div>
 
     <!-- Songs List -->
-    <div v-if="filteredSongs.length > 0" class="space-y-2">
+    <div v-if="filteredSongs.length > 0" class="space-y-2" aria-live="polite">
       <SongCard
         v-for="song in filteredSongs"
         :key="song.id"

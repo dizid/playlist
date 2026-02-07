@@ -53,10 +53,12 @@ async function fetchWithAuth(endpoint, options = {}) {
 
 export const api = {
   // Songs
-  async getSongs(filters = {}) {
+  async getSongs(filters = {}, { page = 1, limit = 50 } = {}) {
     const params = new URLSearchParams()
     if (filters.genres?.length) params.set('genres', filters.genres.join(','))
     if (filters.moods?.length) params.set('moods', filters.moods.join(','))
+    params.set('page', String(page))
+    params.set('limit', String(limit))
 
     const query = params.toString()
     return fetchWithAuth(`/songs${query ? '?' + query : ''}`)

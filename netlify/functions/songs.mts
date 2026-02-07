@@ -21,40 +21,72 @@ export default async (req: Request, context: Context) => {
   const sql = getDb()
 
   try {
-    // GET /api/songs - Get all songs for user with optional filtering
+    // GET /api/songs - Get paginated songs for user with optional filtering
     if (req.method === 'GET') {
       const url = new URL(req.url)
       const genresParam = url.searchParams.get('genres')
       const moodsParam = url.searchParams.get('moods')
 
+      // Pagination params with defaults
+      const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
+      const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10)))
+      const offset = (page - 1) * limit
+
       // Parse filter arrays
       const genres = genresParam ? genresParam.split(',').filter(g => g) : null
       const moods = moodsParam ? moodsParam.split(',').filter(m => m) : null
 
-      // Build query with explicit user_id filter
+      // Get total count and paginated songs
       let songs
+      let countResult
       if (genres && moods) {
+        countResult = await sql`
+          SELECT COUNT(*)::int AS total FROM songs
+          WHERE user_id = ${userId} AND genres && ${genres}::text[] AND moods && ${moods}::text[]`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[] AND moods && ${moods}::text[]
-          ORDER BY popularity DESC NULLS LAST, play_count DESC`
+          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          LIMIT ${limit} OFFSET ${offset}`
       } else if (genres) {
+        countResult = await sql`
+          SELECT COUNT(*)::int AS total FROM songs
+          WHERE user_id = ${userId} AND genres && ${genres}::text[]`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[]
-          ORDER BY popularity DESC NULLS LAST, play_count DESC`
+          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          LIMIT ${limit} OFFSET ${offset}`
       } else if (moods) {
+        countResult = await sql`
+          SELECT COUNT(*)::int AS total FROM songs
+          WHERE user_id = ${userId} AND moods && ${moods}::text[]`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId} AND moods && ${moods}::text[]
-          ORDER BY popularity DESC NULLS LAST, play_count DESC`
+          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          LIMIT ${limit} OFFSET ${offset}`
       } else {
+        countResult = await sql`
+          SELECT COUNT(*)::int AS total FROM songs
+          WHERE user_id = ${userId}`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId}
-          ORDER BY popularity DESC NULLS LAST, play_count DESC`
+          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          LIMIT ${limit} OFFSET ${offset}`
       }
-      return jsonResponse(songs)
+
+      const total = countResult[0].total
+      return jsonResponse({
+        songs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      })
     }
 
     // POST /api/songs - Add or update a song

@@ -11,8 +11,12 @@ import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const DATABASE_URL = process.env.VITE_NEON_DATABASE_URL ||
-  'postgresql://neondb_owner:npg_T1CbKlmBio3w@ep-jolly-term-a1ii1cjm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.VITE_NEON_DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('Error: NEON_DATABASE_URL environment variable is required.');
+  console.error('Set it in .env.local or pass it inline: NEON_DATABASE_URL=postgresql://... node scripts/run-migration.js');
+  process.exit(1);
+}
 
 async function runMigration() {
   const specificFile = process.argv[2];

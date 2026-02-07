@@ -9,6 +9,7 @@ export const useLibraryStore = defineStore('library', () => {
   const isLoading = ref(false)
   const error = ref(null)
   const enrichmentStatus = ref({ pending: 0, completed: 0, failed: 0, manual: 0, total: 0 })
+  const pagination = ref({ page: 1, limit: 50, total: 0, totalPages: 0 })
 
   // Getters
   const songCount = computed(() => songs.value.length)
@@ -33,13 +34,14 @@ export const useLibraryStore = defineStore('library', () => {
   })
 
   // Actions
-  async function fetchSongs() {
+  async function fetchSongs({ page = 1, limit = 50 } = {}) {
     isLoading.value = true
     error.value = null
 
     try {
-      const result = await api.getSongs()
-      songs.value = result
+      const result = await api.getSongs({}, { page, limit })
+      songs.value = result.songs
+      pagination.value = result.pagination
     } catch (e) {
       error.value = e.message
       console.error('Failed to fetch songs:', e)
@@ -185,6 +187,7 @@ export const useLibraryStore = defineStore('library', () => {
     isLoading,
     error,
     enrichmentStatus,
+    pagination,
     // Getters
     songCount,
     topSongs,

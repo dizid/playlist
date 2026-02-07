@@ -31,6 +31,8 @@ function playOnYouTube() {
 
 <template>
   <div
+    role="article"
+    :aria-label="song.title + (song.artist ? ' by ' + song.artist : '')"
     :class="[
       'flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl transition-colors',
       hasValidYouTube ? 'hover:border-zinc-700' : 'opacity-50'
@@ -47,7 +49,7 @@ function playOnYouTube() {
       ]"
       @click="playOnYouTube"
     />
-    <div v-else class="w-14 h-14 bg-zinc-800 rounded flex items-center justify-center">
+    <div v-else class="w-14 h-14 bg-zinc-800 rounded flex items-center justify-center" aria-hidden="true">
       <span class="text-2xl">🎵</span>
     </div>
 
@@ -76,6 +78,7 @@ function playOnYouTube() {
         </span>
         <button
           @click="showTagEditor = true"
+          :aria-label="(song.genres?.length || song.moods?.length ? 'Edit tags for ' : 'Add tags to ') + song.title"
           class="text-indigo-400 hover:text-indigo-300"
         >
           {{ song.genres?.length || song.moods?.length ? 'edit tags' : '+ add tags' }}
@@ -88,6 +91,7 @@ function playOnYouTube() {
       v-if="hasValidYouTube"
       @click="playOnYouTube"
       class="p-2 text-white bg-red-600 rounded-full hover:bg-red-700 transition-colors"
+      :aria-label="'Play ' + song.title + ' on YouTube'"
       title="Play on YouTube"
     >
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

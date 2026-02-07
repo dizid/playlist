@@ -60,7 +60,7 @@ function clearFilters() {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
+  <div class="p-6 lg:p-8" role="main">
     <h1 class="text-2xl font-bold text-white mb-2">Discover</h1>
     <p class="text-zinc-400 mb-6">Filter your library by genre and mood</p>
 
@@ -102,6 +102,7 @@ function clearFilters() {
         <button
           v-if="selectedGenre !== 'all' || selectedMood !== 'all'"
           @click="clearFilters"
+          aria-label="Clear all filters"
           class="text-sm text-zinc-400 hover:text-white"
         >
           Clear filters
@@ -159,7 +160,7 @@ function clearFilters() {
     </div>
 
     <!-- Filtered Songs List -->
-    <div v-else class="space-y-3">
+    <div v-else class="space-y-3" aria-live="polite">
       <SongCard
         v-for="song in filteredSongs"
         :key="song.id"
