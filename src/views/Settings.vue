@@ -1,9 +1,51 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../services/api'
+import {
+  isPushSupported,
+  getPermissionStatus,
+  subscribeToPush,
+  unsubscribeFromPush,
+  isSubscribed
+} from '../services/push-notifications'
 
 const auth = useAuthStore()
+
+// Push notification state
+const pushSupported = ref(false)
+const pushEnabled = ref(false)
+const pushPermission = ref('default')
+const pushLoading = ref(false)
+
+onMounted(async () => {
+  pushSupported.value = isPushSupported()
+  if (pushSupported.value) {
+    pushPermission.value = getPermissionStatus()
+    pushEnabled.value = await isSubscribed()
+  }
+})
+
+async function togglePush() {
+  pushLoading.value = true
+  try {
+    if (pushEnabled.value) {
+      await unsubscribeFromPush()
+      pushEnabled.value = false
+    } else {
+      await subscribeToPush()
+      pushEnabled.value = true
+      pushPermission.value = getPermissionStatus()
+    }
+  } catch (e) {
+    console.error('Push toggle error:', e)
+    // Re-check actual state after error
+    pushPermission.value = getPermissionStatus()
+    pushEnabled.value = await isSubscribed()
+  } finally {
+    pushLoading.value = false
+  }
+}
 
 // Export state
 const isExporting = ref(false)
@@ -103,7 +145,23 @@ async function confirmDelete() {
             <span class="text-xl">📺</span>
             <span class="text-white">YouTube</span>
           </div>
-          <span class="text-sm text-green-500">Connected</span>
+          <div class="flex items-center gap-3">
+            <span v-if="auth.hasYouTubeAccess" class="text-sm text-green-500">Connected</span>
+            <button
+              v-if="auth.hasYouTubeAccess"
+              @click="auth.disconnectYouTube()"
+              class="text-sm text-zinc-400 hover:text-red-400 transition-colors"
+            >
+              Disconnect
+            </button>
+            <button
+              v-else
+              @click="auth.connectYouTube()"
+              class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              Connect
+            </button>
+          </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
           <div class="flex items-center gap-3">
@@ -118,6 +176,40 @@ async function confirmDelete() {
             <span class="text-white">Spotify</span>
           </div>
           <span class="text-sm text-zinc-500">Coming soon</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+      <h3 class="font-semibold text-white mb-4">Notifications</h3>
+      <div class="space-y-3">
+        <!-- Push notifications toggle -->
+        <div class="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
+          <div>
+            <p class="text-white">Push Notifications</p>
+            <p class="text-sm text-zinc-500 mt-0.5">
+              <template v-if="!pushSupported">Not supported in this browser</template>
+              <template v-else-if="pushPermission === 'denied'">Notifications blocked. Enable in browser settings.</template>
+              <template v-else-if="pushEnabled">Enabled</template>
+              <template v-else>Disabled</template>
+            </p>
+          </div>
+          <button
+            v-if="pushSupported && pushPermission !== 'denied'"
+            @click="togglePush"
+            :disabled="pushLoading"
+            role="switch"
+            :aria-checked="pushEnabled"
+            aria-label="Toggle push notifications"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
+            :class="pushEnabled ? 'bg-indigo-600' : 'bg-zinc-700'"
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+              :class="pushEnabled ? 'translate-x-6' : 'translate-x-1'"
+            />
+          </button>
         </div>
       </div>
     </div>
@@ -156,7 +248,16 @@ async function confirmDelete() {
       aria-label="Confirm deletion"
       @click.self="closeDeleteModal"
     >
-      <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-md w-full">
+      <div class="relative bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-md w-full">
+        <button
+          @click="closeDeleteModal"
+          class="absolute top-4 right-4 text-zinc-400 hover:text-white"
+          aria-label="Close dialog"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
         <h3 class="text-xl font-bold text-white mb-4">Delete All Data</h3>
 
         <p class="text-zinc-400 mb-4">

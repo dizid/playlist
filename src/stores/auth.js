@@ -11,7 +11,8 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const session = ref(null)
   const youtubeToken = ref(localStorage.getItem(YOUTUBE_TOKEN_KEY) || null)
-  const youtubeTokenExpiry = ref(localStorage.getItem(YOUTUBE_TOKEN_EXPIRY_KEY) ? parseInt(localStorage.getItem(YOUTUBE_TOKEN_EXPIRY_KEY)) : null)
+  const storedExpiry = localStorage.getItem(YOUTUBE_TOKEN_EXPIRY_KEY)
+  const youtubeTokenExpiry = ref(storedExpiry ? parseInt(storedExpiry, 10) : null)
   const isLoading = ref(false)
   const error = ref(null)
 
@@ -66,8 +67,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Deduplicate concurrent restoreSession calls (App.vue + router guard)
+  let restorePromise = null
+
   // Restore session from Neon Auth (uses HTTP-only cookie)
   async function restoreSession() {
+    // Already authenticated — skip
+    if (session.value && user.value) return true
+
+    // Deduplicate: reuse in-flight promise
+    if (restorePromise) return restorePromise
+
+    restorePromise = _doRestoreSession()
+    try {
+      return await restorePromise
+    } finally {
+      restorePromise = null
+    }
+  }
+
+  async function _doRestoreSession() {
     isLoading.value = true
     error.value = null
 
@@ -87,6 +106,21 @@ export const useAuthStore = defineStore('auth', () => {
 
     isLoading.value = false
     return false
+  }
+
+  // Handle 401 from API calls — clear session and redirect to login
+  function handleUnauthorized() {
+    session.value = null
+    user.value = null
+    error.value = 'Your session has expired. Please sign in again.'
+    if (window.location.pathname !== '/') {
+      window.location.href = '/'
+    }
+  }
+
+  // Clear error (for UI dismiss)
+  function clearError() {
+    error.value = null
   }
 
   // Connect YouTube (separate OAuth for YouTube API access)
@@ -117,9 +151,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Store token expiry time if available
       if (expiresIn) {
-        const expiryTime = Date.now() + (parseInt(expiresIn) * 1000)
-        youtubeTokenExpiry.value = expiryTime
-        localStorage.setItem(YOUTUBE_TOKEN_EXPIRY_KEY, expiryTime.toString())
+        const expireSeconds = parseInt(expiresIn, 10)
+        if (!isNaN(expireSeconds) && expireSeconds > 0) {
+          const expiryTime = Date.now() + (expireSeconds * 1000)
+          youtubeTokenExpiry.value = expiryTime
+          localStorage.setItem(YOUTUBE_TOKEN_EXPIRY_KEY, expiryTime.toString())
+        }
       }
 
       // Clear hash from URL
@@ -171,6 +208,8 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithGoogle,
     loginWithGithub,
     restoreSession,
+    handleUnauthorized,
+    clearError,
     connectYouTube,
     handleYouTubeCallback,
     disconnectYouTube,

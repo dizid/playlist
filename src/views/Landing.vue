@@ -7,55 +7,46 @@ const auth = useAuthStore()
 const router = useRouter()
 
 onMounted(() => {
+  // Reset stale loading state (e.g. user navigated back after failed redirect)
+  if (auth.isLoading && !auth.isAuthenticated) {
+    auth.isLoading = false
+  }
   if (auth.isAuthenticated) {
     router.push('/dashboard')
   }
 })
-
-const features = [
-  {
-    icon: '📥',
-    title: 'Import Everything',
-    description: 'Shazam, YouTube playlists, Google Takeout - all in one place'
-  },
-  {
-    icon: '❤️',
-    title: 'Rate & Organize',
-    description: 'Love, Like, or Skip. Your taste, your rules.'
-  },
-  {
-    icon: '🔥',
-    title: 'Smart Playlists',
-    description: 'Auto-generated Top 50, Heavy Rotation, Rediscoveries'
-  },
-  {
-    icon: '🔮',
-    title: 'Discover New Music',
-    description: 'AI-powered recommendations based on YOUR taste'
-  }
-]
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col">
+
     <!-- Hero -->
-    <div class="flex-1 flex flex-col items-center justify-center px-4 py-16" role="banner">
-      <div class="text-center max-w-2xl mx-auto">
+    <div class="flex-1 flex flex-col items-center justify-center px-4 py-20 md:py-28 relative overflow-hidden" role="banner">
+      <!-- Subtle background glow -->
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+      <div class="text-center max-w-3xl mx-auto relative z-10 animate-fade-in-up">
         <!-- Logo -->
-        <div class="flex items-center justify-center gap-3 mb-8">
+        <div class="flex items-center justify-center gap-3 mb-6">
           <span class="text-5xl">🎧</span>
           <h1 class="text-4xl md:text-5xl font-bold text-white">TuneCraft</h1>
         </div>
 
-        <!-- Tagline -->
-        <p class="text-xl md:text-2xl text-zinc-400 mb-4">
-          Your music layer on top of YouTube
+        <!-- Problem-first headline -->
+        <h2 class="text-2xl md:text-4xl font-bold text-white leading-tight mb-4">
+          Your music is scattered everywhere.
+          <span class="text-indigo-400">Fix that.</span>
+        </h2>
+
+        <!-- Solution subtitle -->
+        <p class="text-lg md:text-xl text-zinc-400 mb-4 max-w-2xl mx-auto">
+          TuneCraft consolidates YouTube, Shazam, and Spotify into one smart library you actually own.
         </p>
-        <p class="text-zinc-500 mb-8">
+        <p class="text-zinc-500 mb-10">
           Own your taste data. Smart playlists. Zero algorithm slop.
         </p>
 
-        <!-- CTA Buttons -->
+        <!-- CTA Buttons (preserved exactly) -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             @click="auth.loginWithGoogle"
@@ -85,28 +76,209 @@ const features = [
           </button>
         </div>
 
+        <!-- Auth error message (preserved exactly) -->
+        <div
+          v-if="auth.error"
+          class="mt-4 mx-auto max-w-md px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"
+          role="alert"
+        >
+          <p>{{ auth.error }}</p>
+          <button
+            @click="auth.clearError()"
+            class="mt-1 text-red-500 underline hover:text-red-400 text-xs"
+          >
+            Dismiss
+          </button>
+        </div>
+
         <p class="mt-4 text-sm text-zinc-600">
-          We only access your YouTube playlists. No posting, no tracking.
+          We import your music data for personal use only. Read-only access — no posting, no tracking.
         </p>
       </div>
     </div>
 
+    <!-- How It Works -->
+    <div class="border-t border-zinc-800 bg-zinc-900/30 py-16 md:py-20 px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-12 animate-fade-in-up animation-delay-1">
+          How it works
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+          <!-- Step 1: Import -->
+          <div class="flex flex-col items-center text-center animate-fade-in-up animation-delay-2">
+            <div class="w-12 h-12 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-lg mb-4">
+              1
+            </div>
+            <div class="w-10 h-10 mb-3 text-zinc-300 flex items-center justify-center">
+              <!-- Download/Import icon -->
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-white mb-2">Import</h3>
+            <p class="text-sm text-zinc-400">Pull in your YouTube playlists, Shazam history, or Spotify library</p>
+          </div>
+
+          <!-- Step 2: Organize -->
+          <div class="flex flex-col items-center text-center animate-fade-in-up animation-delay-3">
+            <div class="w-12 h-12 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-lg mb-4">
+              2
+            </div>
+            <div class="w-10 h-10 mb-3 text-zinc-300 flex items-center justify-center">
+              <!-- Sparkles/Auto icon -->
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-white mb-2">Organize</h3>
+            <p class="text-sm text-zinc-400">Auto-tag genres and moods. Smart playlists build themselves</p>
+          </div>
+
+          <!-- Step 3: Play -->
+          <div class="flex flex-col items-center text-center animate-fade-in-up animation-delay-4">
+            <div class="w-12 h-12 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-lg mb-4">
+              3
+            </div>
+            <div class="w-10 h-10 mb-3 text-zinc-300 flex items-center justify-center">
+              <!-- Play icon -->
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-white mb-2">Play</h3>
+            <p class="text-sm text-zinc-400">One-click YouTube playback. Your taste, your rules</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Features -->
-    <div class="border-t border-zinc-800 bg-zinc-900/50 py-16 px-4" role="main">
-      <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div v-for="feature in features" :key="feature.title" class="flex gap-4">
-          <span class="text-3xl">{{ feature.icon }}</span>
-          <div>
-            <h3 class="font-semibold text-white">{{ feature.title }}</h3>
-            <p class="text-sm text-zinc-400">{{ feature.description }}</p>
+    <div class="border-t border-zinc-800 py-16 md:py-20 px-4" role="main">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-12 animate-fade-in-up animation-delay-1">
+          Everything you need
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Import from 4 sources -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 animate-fade-in-up animation-delay-2">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-indigo-600/15 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-1">Import from 4 sources</h3>
+                <p class="text-sm text-zinc-400 mb-3">YouTube playlists, Shazam history, Google Takeout, and Spotify exports all land in one library.</p>
+                <div class="flex flex-wrap gap-2">
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">YouTube</span>
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Shazam</span>
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Google Takeout</span>
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Spotify</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auto-enrichment -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 animate-fade-in-up animation-delay-3">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-indigo-600/15 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-1">Auto-enrichment</h3>
+                <p class="text-sm text-zinc-400 mb-3">Genres and moods tagged automatically. Rate songs as loved, liked, or skip -- your taste profile builds itself.</p>
+                <div class="flex gap-3 text-sm">
+                  <span class="text-red-500">Loved</span>
+                  <span class="text-green-500">Liked</span>
+                  <span class="text-zinc-500">Skip</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Playlists that think -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 animate-fade-in-up animation-delay-4">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-indigo-600/15 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-1">Playlists that think</h3>
+                <p class="text-sm text-zinc-400 mb-3">Auto-generated smart playlists that update as your taste evolves. No more manual sorting.</p>
+                <div class="flex flex-wrap gap-2">
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Top 50</span>
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Heavy Rotation</span>
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Fresh Loves</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rediscover your music -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 animate-fade-in-up animation-delay-5">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-indigo-600/15 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white mb-1">Rediscover your music</h3>
+                <p class="text-sm text-zinc-400">Find forgotten favorites buried in your own library. Songs you loved years ago, surfaced when you need them.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Footer -->
-    <footer class="py-6 px-4 text-center text-sm text-zinc-600 border-t border-zinc-800">
-      <p>TuneCraft - Your taste, your data, your rules.</p>
+    <footer class="py-8 px-4 text-center border-t border-zinc-800">
+      <p class="text-sm text-zinc-500 mb-1">Built for music lovers who own their data.</p>
+      <p class="text-xs text-zinc-600">TuneCraft - Your taste, your data, your rules.</p>
     </footer>
   </div>
 </template>
+
+<style scoped>
+/* Fade in + slide up animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+/* Staggered delays for sequential reveal */
+.animation-delay-1 {
+  animation-delay: 0.1s;
+}
+.animation-delay-2 {
+  animation-delay: 0.2s;
+}
+.animation-delay-3 {
+  animation-delay: 0.3s;
+}
+.animation-delay-4 {
+  animation-delay: 0.4s;
+}
+.animation-delay-5 {
+  animation-delay: 0.5s;
+}
+</style>

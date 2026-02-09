@@ -81,4 +81,31 @@ router.beforeEach(async (to, from, next) => {
   next()
 })
 
+// Per-route page titles for SEO
+const routeTitles = {
+  'landing': 'TuneCraft - Your Music Layer on YouTube',
+  'dashboard': 'Dashboard | TuneCraft',
+  'library': 'Library | TuneCraft',
+  'import': 'Import | TuneCraft',
+  'discover': 'Discover | TuneCraft',
+  'settings': 'Settings | TuneCraft',
+  'playlist': 'Playlist | TuneCraft',
+  'auth-callback': 'Signing in... | TuneCraft',
+  'youtube-callback': 'Connecting YouTube... | TuneCraft'
+}
+
+router.afterEach((to) => {
+  // Set page title based on route
+  document.title = routeTitles[to.name] || 'TuneCraft'
+
+  // Don't index authenticated pages
+  let robotsMeta = document.querySelector('meta[name="robots"]')
+  if (!robotsMeta) {
+    robotsMeta = document.createElement('meta')
+    robotsMeta.name = 'robots'
+    document.head.appendChild(robotsMeta)
+  }
+  robotsMeta.content = to.meta.requiresAuth ? 'noindex, nofollow' : 'index, follow'
+})
+
 export default router

@@ -1,13 +1,7 @@
 import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
-
-// UUID v4 validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function isValidUuid(id: string): boolean {
-  return UUID_REGEX.test(id)
-}
+import { isValidUuid } from './_shared/validation'
 
 // Max songs per import batch (to keep payload reasonable)
 const MAX_BATCH_SIZE = 5000
@@ -97,8 +91,7 @@ export default async (req: Request, context: Context) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': req.headers.get('Authorization') || '',
-          'X-User-Id': req.headers.get('X-User-Id') || ''
+          'Authorization': req.headers.get('Authorization') || ''
         },
         body: JSON.stringify({ jobId: job.id })
       }).catch(err => {
@@ -200,8 +193,7 @@ export default async (req: Request, context: Context) => {
     return errorResponse('Method not allowed', 405)
   } catch (error) {
     console.error('Import API error:', error)
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
+    return errorResponse('Internal server error', 500)
   }
 }
 

@@ -1,6 +1,7 @@
 import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
+import { isValidUuid } from './_shared/validation'
 
 export default async (req: Request, context: Context) => {
   // Validate session
@@ -16,7 +17,7 @@ export default async (req: Request, context: Context) => {
     // GET /api/history - Get play history for user
     if (req.method === 'GET') {
       const url = new URL(req.url)
-      const limit = parseInt(url.searchParams.get('limit') || '50')
+      const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10)))
 
       const history = await sql`
         SELECT
@@ -40,6 +41,10 @@ export default async (req: Request, context: Context) => {
 
       if (!body.songId) {
         return errorResponse('Missing required field: songId', 400)
+      }
+
+      if (!isValidUuid(body.songId)) {
+        return errorResponse('Invalid songId format', 400)
       }
 
       const result = await sql`

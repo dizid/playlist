@@ -11,9 +11,11 @@ const baseURL = isProduction
   ? `${window.location.origin}/neon`
   : import.meta.env.VITE_NEON_AUTH_URL
 
-// Debug logging to help diagnose OAuth issues
-console.log('[Auth] Mode:', isProduction ? 'production' : 'development')
-console.log('[Auth] Base URL:', baseURL)
+// Debug logging only in development
+if (import.meta.env.DEV) {
+  console.log('[Auth] Mode:', isProduction ? 'production' : 'development')
+  console.log('[Auth] Base URL:', baseURL)
+}
 
 const neonAuth = createAuthClient(baseURL)
 
@@ -43,13 +45,10 @@ export const authClient = {
   signIn: {
     async social({ provider, callbackURL }) {
       try {
-        console.log('[Auth] Starting social sign-in:', { provider, callbackURL })
         const result = await neonAuth.signIn.social({
           provider,
           callbackURL
         })
-
-        console.log('[Auth] signIn.social result:', result)
 
         // If Better Auth returns a redirect URL instead of auto-redirecting, handle it
         if (result?.url) {
@@ -63,8 +62,10 @@ export const authClient = {
 
         return result
       } catch (error) {
-        console.error('[Auth] signIn.social error:', error)
-        throw error
+        // Convert raw HTTP/network errors to user-friendly messages
+        const message = extractErrorMessage(error)
+        console.error('[Auth] signIn.social error:', message)
+        throw new Error(message)
       }
     }
   },
@@ -78,6 +79,20 @@ export const authClient = {
     }
     currentSession = null
   }
+}
+
+// Convert raw HTTP/network errors into user-readable messages
+function extractErrorMessage(error) {
+  if (error?.error?.message) return error.error.message
+  if (error?.message) {
+    if (error.message.includes('403')) return 'Sign-in blocked. Please try again or contact support.'
+    if (error.message.includes('502') || error.message.includes('504')) return 'Auth service is temporarily unavailable. Please try again.'
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      return 'Network error. Check your connection and try again.'
+    }
+    return error.message
+  }
+  return 'Sign-in failed. Please try again.'
 }
 
 // Get the JWT access token for API calls

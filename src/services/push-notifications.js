@@ -1,7 +1,7 @@
 // Push Notifications Service for TuneCraft
 // Handles service worker registration and push subscription management
 
-import { getSessionToken, getUserId } from './auth-client'
+import { getSessionToken } from './auth-client'
 
 // VAPID public key from environment
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
@@ -105,14 +105,12 @@ export async function subscribeToPush() {
 
   // Send subscription to server
   const token = await getSessionToken()
-  const userId = getUserId()
 
   const response = await fetch('/api/push/subscribe', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-User-Id': userId || ''
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
       ...subscription.toJSON(),
@@ -143,17 +141,19 @@ export async function unsubscribeFromPush() {
 
     // Remove from server
     const token = await getSessionToken()
-    const userId = getUserId()
 
-    await fetch('/api/push/subscribe', {
+    const response = await fetch('/api/push/subscribe', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-User-Id': userId || ''
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ endpoint: subscription.endpoint })
     })
+
+    if (!response.ok) {
+      throw new Error('Failed to remove push subscription from server')
+    }
 
     console.log('Push subscription removed')
   }

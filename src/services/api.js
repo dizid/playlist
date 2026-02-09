@@ -1,26 +1,27 @@
 // API service for TuneCraft
 // Handles all server-side API calls with authentication
 
-import { getSessionToken, getUserId } from './auth-client'
+import { getSessionToken } from './auth-client'
 
 // Fetch wrapper with authentication
 async function fetchWithAuth(endpoint, options = {}) {
   const token = await getSessionToken()
-  const userId = getUserId()
 
   const response = await fetch(`/api${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': token ? `Bearer ${token}` : '',
-      'X-User-Id': userId || '',
       ...options.headers
     }
   })
 
-  // Handle unauthorized - could trigger re-auth flow
+  // Handle unauthorized — clear session and redirect to login
   if (response.status === 401) {
-    throw new Error('Unauthorized - please log in again')
+    const { useAuthStore } = await import('../stores/auth')
+    const authStore = useAuthStore()
+    authStore.handleUnauthorized()
+    throw new Error('Session expired')
   }
 
   if (!response.ok) {
@@ -106,6 +107,10 @@ export const api = {
   // Playlists
   async getPlaylists() {
     return fetchWithAuth('/playlists')
+  },
+
+  async getPlaylist(playlistId) {
+    return fetchWithAuth(`/playlists/${playlistId}`)
   },
 
   async createPlaylist(playlist) {

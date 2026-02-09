@@ -226,8 +226,7 @@ export default async (req: Request, context: Context) => {
     return errorResponse('Method not allowed', 405)
   } catch (error) {
     console.error('Enrich API error:', error)
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
+    return errorResponse('Internal server error', 500)
   }
 }
 

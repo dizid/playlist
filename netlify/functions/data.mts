@@ -85,7 +85,14 @@ export default async (req: Request, context: Context) => {
         }))
       }
 
-      return jsonResponse(exportData)
+      return new Response(JSON.stringify(exportData, null, 2), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Disposition': 'attachment; filename="tunecraft-export.json"',
+          'X-Content-Type-Options': 'nosniff'
+        }
+      })
     }
 
     // DELETE /api/data - Delete all user data (full reset)
@@ -109,8 +116,7 @@ export default async (req: Request, context: Context) => {
     return errorResponse('Method not allowed', 405)
   } catch (error) {
     console.error('Data API error:', error)
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
+    return errorResponse('Internal server error', 500)
   }
 }
 

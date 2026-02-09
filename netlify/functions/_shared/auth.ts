@@ -145,15 +145,24 @@ const DEFAULT_ALLOWED_ORIGINS = [
 
 /**
  * Returns the list of allowed origins from ALLOWED_ORIGINS env var
- * (comma-separated) merged with dev defaults.
+ * (comma-separated) merged with dev defaults and Netlify auto-set URLs.
  */
 export function getAllowedOrigins(): string[] {
+  const origins = new Set(DEFAULT_ALLOWED_ORIGINS)
+
+  // Explicit env var
   const envOrigins = process.env.ALLOWED_ORIGINS
   if (envOrigins) {
-    const parsed = envOrigins.split(',').map(o => o.trim()).filter(Boolean)
-    return [...new Set([...DEFAULT_ALLOWED_ORIGINS, ...parsed])]
+    envOrigins.split(',').map(o => o.trim()).filter(Boolean).forEach(o => origins.add(o))
   }
-  return DEFAULT_ALLOWED_ORIGINS
+
+  // Auto-detect Netlify deploy URLs (set automatically by Netlify)
+  const netlifyUrl = process.env.URL
+  if (netlifyUrl) origins.add(netlifyUrl.replace(/\/$/, ''))
+  const deployUrl = process.env.DEPLOY_PRIME_URL
+  if (deployUrl) origins.add(deployUrl.replace(/\/$/, ''))
+
+  return [...origins]
 }
 
 /**

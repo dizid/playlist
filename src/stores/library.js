@@ -6,6 +6,7 @@ export const useLibraryStore = defineStore('library', () => {
   // State
   const songs = ref([])
   const playlists = ref([])
+  const history = ref([])
   const isLoading = ref(false)
   const error = ref(null)
   const enrichmentStatus = ref({ pending: 0, completed: 0, failed: 0, manual: 0, total: 0 })
@@ -34,19 +35,28 @@ export const useLibraryStore = defineStore('library', () => {
   })
 
   // Actions
-  async function fetchSongs({ page = 1, limit = 50 } = {}) {
+  async function fetchSongs({ page = 1, limit = 500, append = false } = {}) {
     isLoading.value = true
     error.value = null
 
     try {
       const result = await api.getSongs({}, { page, limit })
-      songs.value = result.songs
+      songs.value = append ? [...songs.value, ...result.songs] : result.songs
       pagination.value = result.pagination
     } catch (e) {
       error.value = e.message
-      console.error('Failed to fetch songs:', e)
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function loadMore() {
+    if (pagination.value.page < pagination.value.totalPages) {
+      await fetchSongs({
+        page: pagination.value.page + 1,
+        limit: pagination.value.limit,
+        append: true
+      })
     }
   }
 
@@ -59,9 +69,17 @@ export const useLibraryStore = defineStore('library', () => {
       playlists.value = result
     } catch (e) {
       error.value = e.message
-      console.error('Failed to fetch playlists:', e)
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function fetchHistory(limit = 10) {
+    try {
+      const result = await api.getHistory(limit)
+      history.value = result
+    } catch (e) {
+      // History fetch is non-critical — don't set error.value
     }
   }
 
@@ -91,15 +109,18 @@ export const useLibraryStore = defineStore('library', () => {
   }
 
   async function incrementPlayCount(songId) {
+    const song = songs.value.find(s => s.id === songId)
+    if (song) {
+      song.play_count = (song.play_count || 0) + 1
+      song.last_played = new Date().toISOString()
+    }
     try {
       await api.incrementPlayCount(songId)
-
-      const song = songs.value.find(s => s.id === songId)
-      if (song) {
-        song.play_count++
-        song.last_played = new Date().toISOString()
-      }
     } catch (e) {
+      // Revert optimistic update
+      if (song) {
+        song.play_count = Math.max(0, (song.play_count || 1) - 1)
+      }
       error.value = e.message
     }
   }
@@ -157,7 +178,7 @@ export const useLibraryStore = defineStore('library', () => {
 
       // Refetch songs to get updated genres/moods
       if (result.enriched > 0) {
-        await fetchSongs()
+        await fetchSongs({ page: pagination.value.page, limit: pagination.value.limit })
       }
 
       // Update enrichment status
@@ -176,7 +197,7 @@ export const useLibraryStore = defineStore('library', () => {
       enrichmentStatus.value = status
       return status
     } catch (e) {
-      console.error('Failed to fetch enrichment status:', e)
+      // Enrichment status is non-critical — don't set error.value
     }
   }
 
@@ -184,6 +205,7 @@ export const useLibraryStore = defineStore('library', () => {
     // State
     songs,
     playlists,
+    history,
     isLoading,
     error,
     enrichmentStatus,
@@ -195,7 +217,9 @@ export const useLibraryStore = defineStore('library', () => {
     availableMoods,
     // Actions
     fetchSongs,
+    loadMore,
     fetchPlaylists,
+    fetchHistory,
     addSong,
     incrementPlayCount,
     deleteSong,

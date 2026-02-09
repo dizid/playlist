@@ -2,13 +2,7 @@ import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 import { searchYouTubeVideo } from './_shared/youtube'
-
-// UUID v4 validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function isValidUuid(id: string): boolean {
-  return UUID_REGEX.test(id)
-}
+import { isValidUuid } from './_shared/validation'
 
 export default async (req: Request, context: Context) => {
   // Validate session
@@ -220,8 +214,7 @@ export default async (req: Request, context: Context) => {
     return errorResponse('Method not allowed', 405)
   } catch (error) {
     console.error('Songs API error:', error)
-    console.error('Error stack:', error instanceof Error ? error.stack : 'no stack')
-    return errorResponse(error instanceof Error ? error.message : 'Internal server error', 500)
+    return errorResponse('Internal server error', 500)
   }
 }
 

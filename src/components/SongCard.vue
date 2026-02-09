@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useLibraryStore } from '../stores/library'
+import { api } from '../services/api'
 import GenreMoodEditor from './GenreMoodEditor.vue'
 
 const props = defineProps({
@@ -24,8 +25,22 @@ const hasValidYouTube = computed(() => {
 
 function playOnYouTube() {
   if (!hasValidYouTube.value) return
+  // Open YouTube immediately — never block the user
   window.open(`https://www.youtube.com/watch?v=${props.song.youtube_id}`, '_blank')
-  library.incrementPlayCount(props.song.id)
+  // Log play event and update count in background (fire-and-forget)
+  logPlayEvent()
+}
+
+async function logPlayEvent() {
+  try {
+    // Log to play_history table
+    await api.logPlay(props.song.id)
+    // Optimistically update local play count in the store
+    library.incrementPlayCount(props.song.id)
+  } catch (e) {
+    // Silent fail — don't interrupt user experience for tracking
+    console.error('Failed to log play:', e)
+  }
 }
 </script>
 
@@ -90,7 +105,7 @@ function playOnYouTube() {
     <button
       v-if="hasValidYouTube"
       @click="playOnYouTube"
-      class="p-2 text-white bg-red-600 rounded-full hover:bg-red-700 transition-colors"
+      class="p-2 text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors"
       :aria-label="'Play ' + song.title + ' on YouTube'"
       title="Play on YouTube"
     >
