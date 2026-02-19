@@ -1,14 +1,10 @@
 <script setup>
-import { onMounted } from 'vue'
 import { useAuthStore } from './stores/auth'
 import Navigation from './components/Navigation.vue'
 
 const auth = useAuthStore()
-
-onMounted(async () => {
-  // Try to restore existing session from Neon Auth
-  await auth.restoreSession()
-})
+// Session restore is handled by the router guard (router.js beforeEach)
+// so we don't need to call it here — that avoids duplicate/racing calls.
 </script>
 
 <template>

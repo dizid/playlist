@@ -14,7 +14,7 @@ A personal music taste layer on top of YouTube. Own your metadata (ratings, play
 - **Frontend**: Vue 3 + Pinia + Tailwind CSS v4
 - **Backend**: Netlify Functions
 - **Database**: Neon (PostgreSQL)
-- **Auth**: Neon Auth (Google/GitHub)
+- **Auth**: Firebase Auth (Google/GitHub)
 
 ## Quick Start
 
@@ -25,24 +25,21 @@ npm install
 # Set up environment variables (see below)
 cp .env.example .env.local
 
-# Run with Netlify Functions
-netlify dev
+# Run dev server (Vite + Netlify plugin)
+npm run dev
 ```
 
-Open http://localhost:8888
+Open http://localhost:5173
 
 ## Environment Variables
 
-Create `.env.local`:
+Copy `.env.example` and fill in your values:
 
 ```
-VITE_NEON_AUTH_URL=https://your-endpoint.neonauth.region.aws.neon.tech/neondb
-VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+cp .env.example .env.local
 ```
 
-For Netlify deployment, also set in dashboard:
-- `NEON_DATABASE_URL` - PostgreSQL connection string
-- `NEON_AUTH_URL` - Same as VITE_NEON_AUTH_URL
+Key variables: Firebase Auth config (frontend + admin), Neon database URL, Google OAuth client ID for YouTube. See `.env.example` for the full list.
 
 ## Project Structure
 

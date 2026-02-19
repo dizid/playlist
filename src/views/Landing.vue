@@ -6,13 +6,17 @@ import { onMounted } from 'vue'
 const auth = useAuthStore()
 const router = useRouter()
 
-onMounted(() => {
-  // Reset stale loading state (e.g. user navigated back after failed redirect)
-  if (auth.isLoading && !auth.isAuthenticated) {
-    auth.isLoading = false
+onMounted(async () => {
+  // Wait for Firebase auth state (handles redirect return after signInWithRedirect)
+  if (!auth.isAuthenticated) {
+    await auth.restoreSession()
   }
   if (auth.isAuthenticated) {
     router.push('/dashboard')
+  }
+  // Reset stale loading state
+  if (auth.isLoading && !auth.isAuthenticated) {
+    auth.isLoading = false
   }
 })
 </script>

@@ -178,7 +178,7 @@ async function submitBackgroundImport(type, songs) {
 }
 
 async function importYouTubePlaylists() {
-  if (!auth.youtubeToken) {
+  if (!auth.isYouTubeTokenValid) {
     auth.connectYouTube()
     return
   }
@@ -330,7 +330,7 @@ async function importYouTubePlaylists() {
 }
 
 async function importYouTubeLikes() {
-  if (!auth.youtubeToken) {
+  if (!auth.isYouTubeTokenValid) {
     auth.connectYouTube()
     return
   }

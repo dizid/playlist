@@ -7,11 +7,6 @@ const routes = [
     component: () => import('./views/Landing.vue')
   },
   {
-    path: '/auth/callback',
-    name: 'auth-callback',
-    component: () => import('./views/AuthCallback.vue')
-  },
-  {
     path: '/youtube/callback',
     name: 'youtube-callback',
     component: () => import('./views/YouTubeCallback.vue')
@@ -67,7 +62,7 @@ router.beforeEach(async (to, from, next) => {
     const { useAuthStore } = await import('./stores/auth')
     const authStore = useAuthStore()
 
-    // If not authenticated, try to restore session from Neon Auth cookie
+    // If not authenticated, try to restore session from Firebase
     if (!authStore.isAuthenticated) {
       await authStore.restoreSession()
     }
@@ -90,8 +85,7 @@ const routeTitles = {
   'discover': 'Discover | TuneCraft',
   'settings': 'Settings | TuneCraft',
   'playlist': 'Playlist | TuneCraft',
-  'auth-callback': 'Signing in... | TuneCraft',
-  'youtube-callback': 'Connecting YouTube... | TuneCraft'
+'youtube-callback': 'Connecting YouTube... | TuneCraft'
 }
 
 router.afterEach((to) => {

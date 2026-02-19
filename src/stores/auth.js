@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authClient } from '../services/auth-client'
+import { authClient, waitForAuthReady } from '../services/auth-client'
 
-// YouTube token storage keys (separate from Neon Auth session)
+// YouTube token storage keys (separate from Firebase Auth)
 const YOUTUBE_TOKEN_KEY = 'tunelayer_youtube_token'
 const YOUTUBE_TOKEN_EXPIRY_KEY = 'tunelayer_youtube_token_expiry'
 
@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref(null)
 
   // Getters
-  const isAuthenticated = computed(() => !!session.value)
+  const isAuthenticated = computed(() => !!user.value)
   const userEmail = computed(() => user.value?.email || '')
   const userName = computed(() => user.value?.name || '')
   const userPicture = computed(() => user.value?.image || '')
@@ -26,23 +26,18 @@ export const useAuthStore = defineStore('auth', () => {
   // Check if YouTube token is still valid (not expired)
   const isYouTubeTokenValid = computed(() => {
     if (!youtubeToken.value) return false
-    if (!youtubeTokenExpiry.value) return true // No expiry stored, assume valid
-    // Add 60 second buffer to avoid edge cases
+    if (!youtubeTokenExpiry.value) return true
     return Date.now() < (youtubeTokenExpiry.value - 60000)
   })
 
-  // Login with Neon Auth (Google provider)
+  // Login with Firebase (Google) — redirects away, onAuthStateChanged handles return
   async function loginWithGoogle() {
     isLoading.value = true
     error.value = null
 
     try {
-      // This redirects to Neon Auth -> Google OAuth
-      // Session will be established via HTTP-only cookie on callback
-      await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: `${window.location.origin}/auth/callback`
-      })
+      await authClient.signIn.social({ provider: 'google' })
+      // Page navigates away — on return, restoreSession() picks up the user
     } catch (e) {
       console.error('[Auth Store] loginWithGoogle error:', e)
       error.value = e.message
@@ -50,16 +45,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Login with Neon Auth (GitHub provider)
+  // Login with Firebase (GitHub) — redirects away, onAuthStateChanged handles return
   async function loginWithGithub() {
     isLoading.value = true
     error.value = null
 
     try {
-      await authClient.signIn.social({
-        provider: 'github',
-        callbackURL: `${window.location.origin}/auth/callback`
-      })
+      await authClient.signIn.social({ provider: 'github' })
     } catch (e) {
       console.error('[Auth Store] loginWithGithub error:', e)
       error.value = e.message
@@ -67,15 +59,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Deduplicate concurrent restoreSession calls (App.vue + router guard)
+  // Deduplicate concurrent restoreSession calls
   let restorePromise = null
 
-  // Restore session from Neon Auth (uses HTTP-only cookie)
+  // Restore session — waits for Firebase auth state to resolve
   async function restoreSession() {
-    // Already authenticated — skip
-    if (session.value && user.value) return true
-
-    // Deduplicate: reuse in-flight promise
+    if (user.value && session.value) return true
     if (restorePromise) return restorePromise
 
     restorePromise = _doRestoreSession()
@@ -91,16 +80,22 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
+      // Wait for Firebase to check IndexedDB for existing session
+      await waitForAuthReady()
+
+      // Try to get session data from Firebase
       const { data } = await authClient.getSession()
 
-      if (data?.session && data?.user) {
-        session.value = data.session
+      if (data?.user && data?.session) {
+        console.log('[Auth] Session restored for:', data.user.email)
         user.value = data.user
+        session.value = data.session
         isLoading.value = false
         return true
       }
+      console.log('[Auth] No active session')
     } catch (e) {
-      console.error('Failed to restore session:', e)
+      console.error('[Auth] Failed to restore session:', e)
       error.value = e.message
     }
 
@@ -110,8 +105,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Handle 401 from API calls — clear session and redirect to login
   function handleUnauthorized() {
-    session.value = null
     user.value = null
+    session.value = null
+    authClient.clearSession()
     error.value = 'Your session has expired. Please sign in again.'
     if (window.location.pathname !== '/') {
       window.location.href = '/'
@@ -149,7 +145,6 @@ export const useAuthStore = defineStore('auth', () => {
       youtubeToken.value = token
       localStorage.setItem(YOUTUBE_TOKEN_KEY, token)
 
-      // Store token expiry time if available
       if (expiresIn) {
         const expireSeconds = parseInt(expiresIn, 10)
         if (!isNaN(expireSeconds) && expireSeconds > 0) {
@@ -159,14 +154,13 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
-      // Clear hash from URL
       window.history.replaceState({}, document.title, window.location.pathname)
       return true
     }
     return false
   }
 
-  // Logout
+  // Logout — clears Firebase session and all local state
   async function logout() {
     try {
       await authClient.signOut()

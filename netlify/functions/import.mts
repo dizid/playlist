@@ -193,7 +193,8 @@ export default async (req: Request, context: Context) => {
     return errorResponse('Method not allowed', 405)
   } catch (error) {
     console.error('Import API error:', error)
-    return errorResponse('Internal server error', 500)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return errorResponse(message, 500)
   }
 }
 
