@@ -41,3 +41,4 @@ todo.md
 
 # Scripts with credentials
 scripts/apply-rls.js
+.gstack/

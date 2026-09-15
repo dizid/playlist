@@ -2,11 +2,14 @@
 // Replaces Neon Auth — client-side only, no proxy needed.
 // Firebase handles session persistence automatically via IndexedDB.
 
-import { signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth'
+import { signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider } from 'firebase/auth'
 import { auth, googleProvider, githubProvider } from './firebase'
 
 // In-memory cache of current Firebase user
 let currentUser = null
+
+// Callback for when we get a Google OAuth access token (for YouTube API)
+let onOAuthTokenCallback = null
 
 // Promise that resolves when Firebase auth state is first determined
 // (on page load, Firebase checks IndexedDB for existing session)
@@ -28,7 +31,24 @@ function initAuthReady() {
   })
 
   // Check for redirect result (fires after signInWithRedirect returns)
-  getRedirectResult(auth).catch((error) => {
+  // Also extracts Google OAuth access token for YouTube API access
+  getRedirectResult(auth).then((result) => {
+    if (result?.user) {
+      if (!currentUser) {
+        currentUser = result.user
+        if (authReadyResolve) {
+          authReadyResolve()
+          authReadyResolve = null
+        }
+      }
+
+      // Extract Google OAuth access token (for YouTube API)
+      const credential = GoogleAuthProvider.credentialFromResult(result)
+      if (credential?.accessToken && onOAuthTokenCallback) {
+        onOAuthTokenCallback(credential.accessToken)
+      }
+    }
+  }).catch((error) => {
     if (error?.code && error.code !== 'auth/popup-closed-by-user') {
       console.error('[Auth] Redirect result error:', error.code, error.message)
     }
@@ -111,7 +131,7 @@ export const authClient = {
   // Sign out
   async signOut() {
     try {
-      await signOut(auth)
+      await firebaseSignOut(auth)
     } catch (error) {
       console.error('[Auth] Sign out error:', error)
     }
@@ -150,6 +170,12 @@ export async function getSessionToken() {
 // Get the user ID from Firebase user
 export function getUserId() {
   return currentUser?.uid || null
+}
+
+// Register callback for when Google OAuth access token is received
+// (called after Google sign-in redirect with YouTube scope)
+export function onOAuthToken(callback) {
+  onOAuthTokenCallback = callback
 }
 
 export default authClient

@@ -124,8 +124,9 @@ const BLOCKED_CHANNELS = [
   'Bloomberg', 'CNBC', 'CNN', 'BBC', 'Reuters', 'NPR'
 ]
 
-// Check if YouTube is connected
-const needsYouTubeConnection = computed(() => !auth.hasYouTubeAccess)
+// YouTube access: token comes from Google sign-in (same login)
+// If token expired, user can re-authenticate to get a fresh one
+const needsYouTubeReconnect = computed(() => !auth.isYouTubeTokenValid)
 
 // Submit songs for background processing
 async function submitBackgroundImport(type, songs) {
@@ -179,7 +180,7 @@ async function submitBackgroundImport(type, songs) {
 
 async function importYouTubePlaylists() {
   if (!auth.isYouTubeTokenValid) {
-    auth.connectYouTube()
+    auth.reconnectYouTube()
     return
   }
 
@@ -331,7 +332,7 @@ async function importYouTubePlaylists() {
 
 async function importYouTubeLikes() {
   if (!auth.isYouTubeTokenValid) {
-    auth.connectYouTube()
+    auth.reconnectYouTube()
     return
   }
 
@@ -743,20 +744,20 @@ function dismissActiveJob() {
 
     <!-- YouTube Tab -->
     <div v-if="activeTab === 'youtube'" class="space-y-6">
-      <!-- YouTube Connection Status -->
-      <div v-if="needsYouTubeConnection" class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-6">
+      <!-- YouTube token expired — re-authenticate to refresh -->
+      <div v-if="needsYouTubeReconnect" class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-6">
         <div class="flex items-start gap-4">
-          <span class="text-3xl">🔗</span>
+          <span class="text-3xl">🔄</span>
           <div class="flex-1">
-            <h3 class="font-semibold text-white mb-2">Connect YouTube</h3>
+            <h3 class="font-semibold text-white mb-2">YouTube Access Expired</h3>
             <p class="text-sm text-zinc-400 mb-4">
-              To import your YouTube playlists and liked videos, you need to connect your YouTube account.
+              Your YouTube access has expired. Sign in again to refresh it.
             </p>
             <button
-              @click="auth.connectYouTube"
+              @click="auth.reconnectYouTube"
               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
-              Connect YouTube
+              Reconnect YouTube
             </button>
           </div>
         </div>
@@ -767,9 +768,6 @@ function dismissActiveJob() {
         <div class="flex items-center gap-2 text-green-400">
           <span>✓</span>
           <span class="text-sm">YouTube connected</span>
-          <button @click="auth.disconnectYouTube" class="text-xs text-zinc-500 hover:text-zinc-300 ml-2">
-            (Disconnect)
-          </button>
         </div>
 
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">

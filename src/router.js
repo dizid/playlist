@@ -7,11 +7,6 @@ const routes = [
     component: () => import('./views/Landing.vue')
   },
   {
-    path: '/youtube/callback',
-    name: 'youtube-callback',
-    component: () => import('./views/YouTubeCallback.vue')
-  },
-  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('./views/Dashboard.vue'),
@@ -84,8 +79,7 @@ const routeTitles = {
   'import': 'Import | TuneCraft',
   'discover': 'Discover | TuneCraft',
   'settings': 'Settings | TuneCraft',
-  'playlist': 'Playlist | TuneCraft',
-'youtube-callback': 'Connecting YouTube... | TuneCraft'
+  'playlist': 'Playlist | TuneCraft'
 }
 
 router.afterEach((to) => {

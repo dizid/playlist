@@ -23,7 +23,6 @@ export default async (req: Request, context: Context) => {
           artist,
           channel,
           thumbnail,
-          rating,
           play_count,
           last_played,
           genres,
@@ -42,7 +41,6 @@ export default async (req: Request, context: Context) => {
       const playlists = await sql`
         SELECT
           name,
-          description,
           type,
           rules,
           song_ids,
@@ -63,7 +61,6 @@ export default async (req: Request, context: Context) => {
           artist: s.artist,
           channel: s.channel,
           thumbnail: s.thumbnail,
-          rating: s.rating,
           play_count: s.play_count,
           last_played: s.last_played,
           genres: s.genres || [],
@@ -76,7 +73,6 @@ export default async (req: Request, context: Context) => {
         })),
         playlists: playlists.map(p => ({
           name: p.name,
-          description: p.description,
           type: p.type,
           rules: p.rules,
           song_ids: p.song_ids || [],

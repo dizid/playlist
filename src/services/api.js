@@ -7,13 +7,17 @@ import { getSessionToken } from './auth-client'
 async function fetchWithAuth(endpoint, options = {}) {
   const token = await getSessionToken()
 
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const response = await fetch(`/api${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
-      ...options.headers
-    }
+    headers
   })
 
   // Handle unauthorized — clear session and redirect to login

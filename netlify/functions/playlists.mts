@@ -118,7 +118,7 @@ export default async (req: Request, context: Context) => {
           ORDER BY ${sortBy} ${sortOrder} NULLS LAST
           LIMIT $${paramIndex}`
 
-        songs = await sql.query(query, params) as Record<string, unknown>[]
+        songs = await sql(query, params) as Record<string, unknown>[]
       }
 
       return jsonResponse({

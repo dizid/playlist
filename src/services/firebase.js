@@ -16,4 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
+// Request YouTube read access during Google sign-in (single login instead of two)
+googleProvider.addScope('https://www.googleapis.com/auth/youtube.readonly')
+
 export const githubProvider = new GithubAuthProvider()

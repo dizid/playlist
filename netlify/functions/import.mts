@@ -37,11 +37,13 @@ export default async (req: Request, context: Context) => {
         return errorResponse(`Too many songs. Maximum ${MAX_BATCH_SIZE} per batch.`, 400)
       }
 
-      // Check for existing pending/processing job for this user
+      // Check for existing pending/processing job (ignore stale jobs older than 30 min)
       const existingJobs = await sql`
         SELECT id, status, total_items, processed_items
         FROM import_jobs
-        WHERE user_id = ${userId} AND status IN ('pending', 'processing')
+        WHERE user_id = ${userId}
+          AND status IN ('pending', 'processing')
+          AND created_at > NOW() - INTERVAL '30 minutes'
         LIMIT 1
       `
 
@@ -73,7 +75,7 @@ export default async (req: Request, context: Context) => {
           'pending',
           ${body.notifyEmail !== false},
           ${body.notifyPush !== false},
-          ${body.email || null},
+          ${(body.email && body.email === session.user.email) ? body.email : null},
           ${JSON.stringify(body.songs)}::jsonb
         )
         RETURNING id, status, total_items, created_at
@@ -193,8 +195,7 @@ export default async (req: Request, context: Context) => {
     return errorResponse('Method not allowed', 405)
   } catch (error) {
     console.error('Import API error:', error)
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
+    return errorResponse('Internal server error', 500)
   }
 }
 

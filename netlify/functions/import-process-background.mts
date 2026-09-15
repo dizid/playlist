@@ -43,10 +43,11 @@ export default async (req: Request, context: Context) => {
 
   const userId = session.user.id
   const sql = getDb()
+  let jobId: string | null = null // Capture early for error handler
 
   try {
     const body = await req.json()
-    const { jobId } = body
+    jobId = body.jobId
 
     if (!jobId) {
       return errorResponse('Missing jobId', 400)
@@ -182,8 +183,12 @@ export default async (req: Request, context: Context) => {
 
     console.log(`Import job ${jobId} completed: ${insertedItems} inserted, ${skippedItems} skipped`)
 
-    // Send notifications
-    await sendNotifications(sql, job, insertedItems, skippedItems, processedItems)
+    // Send notifications (don't let notification failures affect job status)
+    try {
+      await sendNotifications(sql, job, insertedItems, skippedItems, processedItems)
+    } catch (notifErr) {
+      console.error('Notification sending failed (job still completed):', notifErr)
+    }
 
     return jsonResponse({
       status: 'completed',
@@ -194,22 +199,20 @@ export default async (req: Request, context: Context) => {
   } catch (error) {
     console.error('Background import error:', error)
 
-    // Try to mark job as failed
-    try {
-      const body = await req.clone().json()
-      if (body.jobId) {
+    // Mark job as failed using captured jobId (req body already consumed)
+    if (jobId) {
+      try {
         await sql`
           UPDATE import_jobs
           SET status = 'failed', error_message = ${error instanceof Error ? error.message : 'Unknown error'}
-          WHERE id = ${body.jobId}::uuid
+          WHERE id = ${jobId}::uuid AND user_id = ${userId}
         `
+      } catch (updateErr) {
+        console.error('Failed to mark job as failed:', updateErr)
       }
-    } catch {
-      // Ignore - couldn't update job status
     }
 
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
+    return errorResponse('Internal server error', 500)
   }
 }
 

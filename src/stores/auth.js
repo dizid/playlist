@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authClient, waitForAuthReady } from '../services/auth-client'
+import { authClient, waitForAuthReady, onOAuthToken } from '../services/auth-client'
 
 // YouTube token storage keys (separate from Firebase Auth)
 const YOUTUBE_TOKEN_KEY = 'tunelayer_youtube_token'
@@ -30,7 +30,21 @@ export const useAuthStore = defineStore('auth', () => {
     return Date.now() < (youtubeTokenExpiry.value - 60000)
   })
 
+  // Register callback to capture Google OAuth access token (for YouTube API)
+  // This fires after Google sign-in redirect returns with the youtube.readonly scope
+  onOAuthToken((accessToken) => {
+    console.log('[Auth] YouTube access token received from Google sign-in')
+    youtubeToken.value = accessToken
+    localStorage.setItem(YOUTUBE_TOKEN_KEY, accessToken)
+
+    // Google OAuth tokens expire in ~3600 seconds (1 hour)
+    const expiryTime = Date.now() + (3600 * 1000)
+    youtubeTokenExpiry.value = expiryTime
+    localStorage.setItem(YOUTUBE_TOKEN_EXPIRY_KEY, expiryTime.toString())
+  })
+
   // Login with Firebase (Google) — redirects away, onAuthStateChanged handles return
+  // YouTube access token is captured automatically via onOAuthToken callback
   async function loginWithGoogle() {
     isLoading.value = true
     error.value = null
@@ -119,45 +133,18 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  // Connect YouTube (separate OAuth for YouTube API access)
-  function connectYouTube() {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    const redirectUri = `${window.location.origin}/youtube/callback`
-    const scope = encodeURIComponent('https://www.googleapis.com/auth/youtube.readonly')
-
-    window.location.href =
-      `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}` +
-      `&redirect_uri=${redirectUri}` +
-      `&response_type=token` +
-      `&scope=${scope}` +
-      `&prompt=consent`
+  // Reconnect YouTube — re-triggers Google sign-in (which includes YouTube scope)
+  // Used when the OAuth access token has expired (~1 hour)
+  function reconnectYouTube() {
+    authClient.signIn.social({ provider: 'google' })
   }
 
-  // Handle YouTube OAuth callback
-  function handleYouTubeCallback() {
-    const hash = window.location.hash.substring(1)
-    const params = new URLSearchParams(hash)
-    const token = params.get('access_token')
-    const expiresIn = params.get('expires_in')
-
-    if (token) {
-      youtubeToken.value = token
-      localStorage.setItem(YOUTUBE_TOKEN_KEY, token)
-
-      if (expiresIn) {
-        const expireSeconds = parseInt(expiresIn, 10)
-        if (!isNaN(expireSeconds) && expireSeconds > 0) {
-          const expiryTime = Date.now() + (expireSeconds * 1000)
-          youtubeTokenExpiry.value = expiryTime
-          localStorage.setItem(YOUTUBE_TOKEN_EXPIRY_KEY, expiryTime.toString())
-        }
-      }
-
-      window.history.replaceState({}, document.title, window.location.pathname)
-      return true
-    }
-    return false
+  // Disconnect YouTube (keep main session)
+  function disconnectYouTube() {
+    youtubeToken.value = null
+    youtubeTokenExpiry.value = null
+    localStorage.removeItem(YOUTUBE_TOKEN_KEY)
+    localStorage.removeItem(YOUTUBE_TOKEN_EXPIRY_KEY)
   }
 
   // Logout — clears Firebase session and all local state
@@ -169,14 +156,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
     user.value = null
     session.value = null
-    youtubeToken.value = null
-    youtubeTokenExpiry.value = null
-    localStorage.removeItem(YOUTUBE_TOKEN_KEY)
-    localStorage.removeItem(YOUTUBE_TOKEN_EXPIRY_KEY)
-  }
-
-  // Disconnect YouTube (keep main session)
-  function disconnectYouTube() {
     youtubeToken.value = null
     youtubeTokenExpiry.value = null
     localStorage.removeItem(YOUTUBE_TOKEN_KEY)
@@ -204,8 +183,7 @@ export const useAuthStore = defineStore('auth', () => {
     restoreSession,
     handleUnauthorized,
     clearError,
-    connectYouTube,
-    handleYouTubeCallback,
+    reconnectYouTube,
     disconnectYouTube,
     logout
   }
