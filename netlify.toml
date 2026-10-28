@@ -12,6 +12,16 @@
   port = 8888
   autoLaunch = false
 
+# Firebase Auth handler proxy - keeps sign-in on our own domain (authDomain = tunecraft.music).
+# Without this, signInWithRedirect breaks in Chrome/Safari/Firefox because the auth helper
+# on firebaseapp.com is third-party and its storage is partitioned (user returns signed out).
+# Must stay above the SPA fallback.
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://tunecraft-1aa7d.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
+
 # SPA fallback - serve index.html for all routes so Vue Router can handle them
 [[redirects]]
   from = "/*"

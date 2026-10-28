@@ -118,7 +118,8 @@ export default async (req: Request, context: Context) => {
           ORDER BY ${sortBy} ${sortOrder} NULLS LAST
           LIMIT $${paramIndex}`
 
-        songs = await sql(query, params) as Record<string, unknown>[]
+        // Neon driver v1+: dynamic queries with $n placeholders must use sql.query()
+        songs = await sql.query(query, params) as Record<string, unknown>[]
       }
 
       return jsonResponse({
