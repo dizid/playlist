@@ -18,6 +18,8 @@ vi.mock('../firebase', () => ({
   auth: {},
   googleProvider: { id: 'google-signin' },
   githubProvider: { id: 'github-signin' },
+  facebookProvider: { id: 'facebook-signin' },
+  xProvider: { id: 'x-signin' },
   youtubeProvider: { id: 'google-youtube' }
 }))
 
@@ -77,6 +79,39 @@ describe('auth-client YouTube token handling', () => {
     await flush()
 
     expect(tokens).toEqual(['other-account-token'])
+  })
+})
+
+describe('auth-client sign-in', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionStorage.clear()
+  })
+
+  it.each([
+    ['google', 'google-signin'],
+    ['github', 'github-signin'],
+    ['facebook', 'facebook-signin'],
+    ['x', 'x-signin']
+  ])('sends the %s button to its own provider', async (name, providerId) => {
+    const { client, settle } = await loadClient()
+    settle.resolve(null)
+
+    await client.authClient.signIn.social({ provider: name })
+
+    expect(firebaseAuth.signInWithRedirect).toHaveBeenCalledWith({}, { id: providerId })
+  })
+
+  it('tells the user when the email already has an account under another button', async () => {
+    const { client, settle } = await loadClient()
+    const messages = []
+    client.onRedirectError(message => messages.push(message))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    settle.reject({ code: 'auth/account-exists-with-different-credential', message: 'exists' })
+    await flush()
+
+    expect(messages).toEqual(['You already have a TuneCraft account with this email. Sign in with the button you used before.'])
   })
 })
 

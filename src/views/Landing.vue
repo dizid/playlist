@@ -2,9 +2,30 @@
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
 import { onMounted } from 'vue'
+import { SIGN_IN_PROVIDERS } from '../services/firebase'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+// Sign-in buttons next to Google's (Google keeps its own multi-colour button).
+// Which ones show is set by SIGN_IN_PROVIDERS in services/firebase.js.
+const PROVIDER_BUTTONS = {
+  github: {
+    label: 'GitHub',
+    iconPath: 'M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z'
+  },
+  facebook: {
+    label: 'Facebook',
+    iconPath: 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'
+  },
+  x: {
+    label: 'X',
+    iconPath: 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z'
+  }
+}
+const otherProviders = SIGN_IN_PROVIDERS
+  .filter(id => id !== 'google')
+  .map(id => ({ id, ...PROVIDER_BUTTONS[id] }))
 
 onMounted(async () => {
   // Wait for Firebase auth state (handles redirect return after signInWithRedirect)
@@ -51,9 +72,9 @@ onMounted(async () => {
         </p>
 
         <!-- CTA Buttons (preserved exactly) -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 justify-center">
           <button
-            @click="auth.loginWithGoogle"
+            @click="auth.loginWith('google')"
             :disabled="auth.isLoading"
             aria-label="Sign in with Google"
             class="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50"
@@ -68,15 +89,17 @@ onMounted(async () => {
           </button>
 
           <button
-            @click="auth.loginWithGithub"
+            v-for="provider in otherProviders"
+            :key="provider.id"
+            @click="auth.loginWith(provider.id)"
             :disabled="auth.isLoading"
-            aria-label="Sign in with GitHub"
+            :aria-label="`Sign in with ${provider.label}`"
             class="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors disabled:opacity-50"
           >
-            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path :d="provider.iconPath"/>
             </svg>
-            Sign in with GitHub
+            Sign in with {{ provider.label }}
           </button>
         </div>
 
@@ -248,6 +271,11 @@ onMounted(async () => {
     <footer class="py-8 px-4 text-center border-t border-zinc-800">
       <p class="text-sm text-zinc-500 mb-1">Built for music lovers who own their data.</p>
       <p class="text-xs text-zinc-600">TuneCraft - Your taste, your data, your rules.</p>
+      <p class="text-xs text-zinc-500 mt-3">
+        <router-link to="/privacy" class="hover:text-zinc-300">Privacy</router-link>
+        <span class="mx-2" aria-hidden="true">·</span>
+        <router-link to="/terms" class="hover:text-zinc-300">Terms</router-link>
+      </p>
     </footer>
   </div>
 </template>

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authClient, waitForAuthReady, onOAuthToken } from '../services/auth-client'
+import { authClient, waitForAuthReady, onOAuthToken, onRedirectError } from '../services/auth-client'
 
 // YouTube token storage keys (separate from Firebase Auth)
 const YOUTUBE_TOKEN_KEY = 'tunelayer_youtube_token'
@@ -43,31 +43,24 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(YOUTUBE_TOKEN_EXPIRY_KEY, expiryTime.toString())
   })
 
-  // Login with Firebase (Google) — redirects away, onAuthStateChanged handles return
-  // Asks for name + email only; YouTube access is a separate step (connectYouTube)
-  async function loginWithGoogle() {
+  // Show sign-in errors that only appear after the redirect returns
+  // (e.g. this email already has an account under another sign-in button)
+  onRedirectError((message) => {
+    error.value = message
+  })
+
+  // Login with Firebase ('google' | 'github' | 'facebook' | 'x') — redirects away,
+  // onAuthStateChanged handles the return. Google asks for name + email only;
+  // YouTube access is a separate step (connectYouTube).
+  async function loginWith(provider) {
     isLoading.value = true
     error.value = null
 
     try {
-      await authClient.signIn.social({ provider: 'google' })
+      await authClient.signIn.social({ provider })
       // Page navigates away — on return, restoreSession() picks up the user
     } catch (e) {
-      console.error('[Auth Store] loginWithGoogle error:', e)
-      error.value = e.message
-      isLoading.value = false
-    }
-  }
-
-  // Login with Firebase (GitHub) — redirects away, onAuthStateChanged handles return
-  async function loginWithGithub() {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      await authClient.signIn.social({ provider: 'github' })
-    } catch (e) {
-      console.error('[Auth Store] loginWithGithub error:', e)
+      console.error('[Auth Store] loginWith error:', provider, e)
       error.value = e.message
       isLoading.value = false
     }
@@ -184,8 +177,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasYouTubeAccess,
     isYouTubeTokenValid,
     // Actions
-    loginWithGoogle,
-    loginWithGithub,
+    loginWith,
     restoreSession,
     handleUnauthorized,
     clearError,

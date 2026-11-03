@@ -6,6 +6,17 @@ const routes = [
     name: 'landing',
     component: () => import('./views/Landing.vue')
   },
+  // Public legal pages (also linked from Google, Facebook and X app settings)
+  {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('./views/Privacy.vue')
+  },
+  {
+    path: '/terms',
+    name: 'terms',
+    component: () => import('./views/Terms.vue')
+  },
   {
     path: '/dashboard',
     name: 'dashboard',

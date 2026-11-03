@@ -2,7 +2,7 @@
 // Config uses VITE_ env vars (safe publishable keys)
 
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, TwitterAuthProvider } from 'firebase/auth'
 
 // On the live site, run the sign-in helper from our own domain (proxied to firebaseapp.com
 // via /__/auth/* in netlify.toml). With the firebaseapp.com helper, browsers that partition
@@ -34,3 +34,13 @@ export const youtubeProvider = new GoogleAuthProvider()
 youtubeProvider.addScope('https://www.googleapis.com/auth/youtube.readonly')
 
 export const githubProvider = new GithubAuthProvider()
+
+export const facebookProvider = new FacebookAuthProvider()
+facebookProvider.addScope('email')
+
+// X (formerly Twitter) still uses Firebase's Twitter provider
+export const xProvider = new TwitterAuthProvider()
+
+// Sign-in buttons shown on the landing page, in this order. Add a provider here only after
+// it is switched on in Firebase (Authentication -> Sign-in method), or its button errors.
+export const SIGN_IN_PROVIDERS = ['google']

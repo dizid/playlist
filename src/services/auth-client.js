@@ -11,13 +11,24 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider
 } from 'firebase/auth'
-import { auth, googleProvider, githubProvider, youtubeProvider } from './firebase'
+import { auth, googleProvider, githubProvider, facebookProvider, xProvider, youtubeProvider } from './firebase'
+
+// Sign-in providers by the name the UI uses
+const SIGN_IN_PROVIDER_MAP = {
+  google: googleProvider,
+  github: githubProvider,
+  facebook: facebookProvider,
+  x: xProvider
+}
 
 // In-memory cache of current Firebase user
 let currentUser = null
 
 // Callback for when we get a Google OAuth access token (for YouTube API)
 let onOAuthTokenCallback = null
+
+// Callback for a sign-in that failed after the redirect came back (e.g. email already used)
+let onRedirectErrorCallback = null
 
 // Set right before the "Connect YouTube" redirect. Only a redirect that asked for the
 // YouTube scope may store its access token; a plain sign-in token can't read YouTube.
@@ -85,6 +96,7 @@ function initAuthReady() {
     }
     if (error?.code && error.code !== 'auth/popup-closed-by-user') {
       console.error('[Auth] Redirect result error:', error.code, error.message)
+      if (onRedirectErrorCallback) onRedirectErrorCallback(extractErrorMessage(error))
     }
   })
 }
@@ -151,7 +163,8 @@ export const authClient = {
   signIn: {
     async social({ provider }) {
       try {
-        const authProvider = provider === 'github' ? githubProvider : googleProvider
+        const authProvider = SIGN_IN_PROVIDER_MAP[provider]
+        if (!authProvider) throw new Error(`Unknown sign-in provider: ${provider}`)
         // This navigates away from the page — on return, onAuthStateChanged fires
         await signInWithRedirect(auth, authProvider)
       } catch (error) {
@@ -207,7 +220,7 @@ function extractErrorMessage(error) {
   if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return 'Sign-in cancelled.'
   if (code === 'auth/popup-blocked') return 'Sign-in was blocked by the browser. Retrying with redirect...'
   if (code === 'auth/account-exists-with-different-credential') {
-    return 'An account already exists with this email using a different sign-in method.'
+    return 'You already have a TuneCraft account with this email. Sign in with the button you used before.'
   }
   if (code === 'auth/network-request-failed') return 'Network error. Check your connection and try again.'
   if (error?.message) return error.message
@@ -238,6 +251,11 @@ export function getUserId() {
 // (called after the "Connect YouTube" redirect returns with the YouTube scope)
 export function onOAuthToken(callback) {
   onOAuthTokenCallback = callback
+}
+
+// Register callback for a sign-in error that only shows up after the redirect returns
+export function onRedirectError(callback) {
+  onRedirectErrorCallback = callback
 }
 
 export default authClient
