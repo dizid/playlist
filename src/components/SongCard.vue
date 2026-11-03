@@ -24,7 +24,13 @@ const hasValidYouTube = computed(() => {
 })
 
 function playOnYouTube() {
-  if (!hasValidYouTube.value) return
+  if (!hasValidYouTube.value) {
+    // No linked video yet (e.g. synced from Last.fm): open a YouTube search instead.
+    // Free (no API quota) and not logged as a play, since we don't know what gets played.
+    const query = [props.song.artist, props.song.title].filter(Boolean).join(' ')
+    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank')
+    return
+  }
   // Open YouTube immediately — never block the user
   window.open(`https://www.youtube.com/watch?v=${props.song.youtube_id}`, '_blank')
   // Log play event and update count in background (fire-and-forget)
@@ -48,20 +54,14 @@ async function logPlayEvent() {
   <div
     role="article"
     :aria-label="song.title + (song.artist ? ' by ' + song.artist : '')"
-    :class="[
-      'flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl transition-colors',
-      hasValidYouTube ? 'hover:border-zinc-700' : 'opacity-50'
-    ]"
+    class="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl transition-colors hover:border-zinc-700"
   >
     <!-- Thumbnail -->
     <img
       v-if="song.thumbnail"
       :src="song.thumbnail"
       :alt="song.title"
-      :class="[
-        'w-14 h-14 rounded object-cover',
-        hasValidYouTube ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
-      ]"
+      class="w-14 h-14 rounded object-cover cursor-pointer hover:opacity-80"
       @click="playOnYouTube"
     />
     <div v-else class="w-14 h-14 bg-zinc-800 rounded flex items-center justify-center" aria-hidden="true">
@@ -71,10 +71,7 @@ async function logPlayEvent() {
     <!-- Info -->
     <div class="flex-1 min-w-0">
       <p
-        :class="[
-          'font-medium truncate',
-          hasValidYouTube ? 'text-white cursor-pointer hover:text-indigo-400' : 'text-zinc-400 cursor-default'
-        ]"
+        class="font-medium truncate text-white cursor-pointer hover:text-indigo-400"
         @click="playOnYouTube"
       >
         {{ song.title }}
@@ -88,8 +85,8 @@ async function logPlayEvent() {
         <span v-if="song.genres?.length" class="text-zinc-500">
           {{ song.genres.slice(0, 2).join(', ') }}
         </span>
-        <span v-if="!hasValidYouTube" class="text-amber-500">
-          ⚠️ No YouTube link
+        <span v-if="!hasValidYouTube" class="text-zinc-500" title="No video linked yet: play opens a YouTube search">
+          YouTube search
         </span>
         <button
           @click="showTagEditor = true"
@@ -101,20 +98,23 @@ async function logPlayEvent() {
       </div>
     </div>
 
-    <!-- Play button (only show if valid YouTube) -->
+    <!-- Play button: linked video, or a YouTube search when no video is linked yet -->
     <button
-      v-if="hasValidYouTube"
       @click="playOnYouTube"
-      class="p-2 text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors"
-      :aria-label="'Play ' + song.title + ' on YouTube'"
-      title="Play on YouTube"
+      :class="[
+        'p-2 text-white rounded-full transition-colors',
+        hasValidYouTube ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-zinc-700 hover:bg-zinc-600'
+      ]"
+      :aria-label="(hasValidYouTube ? 'Play ' : 'Search YouTube for ') + song.title"
+      :title="hasValidYouTube ? 'Play on YouTube' : 'Search on YouTube'"
     >
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <svg v-if="hasValidYouTube" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M8 5v14l11-7z"/>
       </svg>
+      <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.2-5.2m0 0A7.5 7.5 0 1 0 5.2 5.2a7.5 7.5 0 0 0 10.6 10.6Z"/>
+      </svg>
     </button>
-    <!-- Placeholder for alignment when no play button -->
-    <div v-else class="w-9 h-9" />
 
     <!-- Tag Editor Modal -->
     <GenreMoodEditor

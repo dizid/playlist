@@ -178,6 +178,31 @@ export const api = {
 
   async getImportHistory() {
     return fetchWithAuth('/import/history')
+  },
+
+  // Connected services (Last.fm, ListenBrainz) - automatic play-history sync
+  async getConnections() {
+    return fetchWithAuth('/connections')
+  },
+
+  async connectService(provider, username) {
+    return fetchWithAuth('/connections', {
+      method: 'POST',
+      body: JSON.stringify({ provider, username })
+    })
+  },
+
+  // One short sync pass; returns { busy, importedPlays, complete, connection }
+  async syncConnection(provider) {
+    return fetchWithAuth(`/connections/${provider}/sync`, {
+      method: 'POST'
+    })
+  },
+
+  async disconnectService(provider) {
+    return fetchWithAuth(`/connections/${provider}`, {
+      method: 'DELETE'
+    })
   }
 }
 

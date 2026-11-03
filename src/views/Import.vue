@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useLibraryStore } from '../stores/library'
 import { api } from '../services/api'
+import ConnectionsPanel from '../components/ConnectionsPanel.vue'
 import {
   isPushSupported,
   getPermissionStatus,
@@ -584,6 +585,9 @@ function dismissActiveJob() {
 <template>
   <div class="p-6 lg:p-8" role="main">
     <h1 class="text-2xl font-bold text-white mb-6">Import Music</h1>
+
+    <!-- Automatic sync (Last.fm / ListenBrainz) above the one-off file imports -->
+    <ConnectionsPanel />
 
     <!-- Active Background Job -->
     <div
