@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Register callback to capture Google OAuth access token (for YouTube API)
-  // This fires after Google sign-in redirect returns with the youtube.readonly scope
+  // This fires after the "Connect YouTube" redirect returns with the youtube.readonly scope
   onOAuthToken((accessToken) => {
     console.log('[Auth] YouTube access token received from Google sign-in')
     youtubeToken.value = accessToken
@@ -44,7 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Login with Firebase (Google) — redirects away, onAuthStateChanged handles return
-  // YouTube access token is captured automatically via onOAuthToken callback
+  // Asks for name + email only; YouTube access is a separate step (connectYouTube)
   async function loginWithGoogle() {
     isLoading.value = true
     error.value = null
@@ -133,10 +133,16 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  // Reconnect YouTube — re-triggers Google sign-in (which includes YouTube scope)
-  // Used when the OAuth access token has expired (~1 hour)
-  function reconnectYouTube() {
-    authClient.signIn.social({ provider: 'google' })
+  // Connect YouTube — redirects to Google to grant YouTube read access.
+  // Also used to refresh the access token after it expires (~1 hour).
+  async function connectYouTube() {
+    error.value = null
+    try {
+      await authClient.connectYouTube()
+      // Page navigates away — on return, the onOAuthToken callback stores the token
+    } catch (e) {
+      error.value = e.message
+    }
   }
 
   // Disconnect YouTube (keep main session)
@@ -183,7 +189,7 @@ export const useAuthStore = defineStore('auth', () => {
     restoreSession,
     handleUnauthorized,
     clearError,
-    reconnectYouTube,
+    connectYouTube,
     disconnectYouTube,
     logout
   }

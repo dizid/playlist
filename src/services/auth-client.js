@@ -2,14 +2,37 @@
 // Replaces Neon Auth — client-side only, no proxy needed.
 // Firebase handles session persistence automatically via IndexedDB.
 
-import { signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider } from 'firebase/auth'
-import { auth, googleProvider, githubProvider } from './firebase'
+import {
+  signInWithRedirect,
+  reauthenticateWithRedirect,
+  linkWithRedirect,
+  getRedirectResult,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  GoogleAuthProvider
+} from 'firebase/auth'
+import { auth, googleProvider, githubProvider, youtubeProvider } from './firebase'
 
 // In-memory cache of current Firebase user
 let currentUser = null
 
 // Callback for when we get a Google OAuth access token (for YouTube API)
 let onOAuthTokenCallback = null
+
+// Set right before the "Connect YouTube" redirect. Only a redirect that asked for the
+// YouTube scope may store its access token; a plain sign-in token can't read YouTube.
+const YOUTUBE_CONNECT_FLAG = 'tunecraft_youtube_connect_pending'
+
+// Reads and clears the flag (sessionStorage survives the same-tab redirect)
+function takeYouTubeConnectFlag() {
+  try {
+    const pending = sessionStorage.getItem(YOUTUBE_CONNECT_FLAG) === '1'
+    sessionStorage.removeItem(YOUTUBE_CONNECT_FLAG)
+    return pending
+  } catch {
+    return false
+  }
+}
 
 // Promise that resolves when Firebase auth state is first determined
 // (on page load, Firebase checks IndexedDB for existing session)
@@ -30,8 +53,8 @@ function initAuthReady() {
     }
   })
 
-  // Check for redirect result (fires after signInWithRedirect returns)
-  // Also extracts Google OAuth access token for YouTube API access
+  // Check for redirect result (fires after a sign-in or "Connect YouTube" redirect returns)
+  const youtubeConnectPending = takeYouTubeConnectFlag()
   getRedirectResult(auth).then((result) => {
     if (result?.user) {
       if (!currentUser) {
@@ -42,13 +65,24 @@ function initAuthReady() {
         }
       }
 
-      // Extract Google OAuth access token (for YouTube API)
-      const credential = GoogleAuthProvider.credentialFromResult(result)
-      if (credential?.accessToken && onOAuthTokenCallback) {
-        onOAuthTokenCallback(credential.accessToken)
+      // Keep the Google access token only when this redirect asked for YouTube access
+      if (youtubeConnectPending) {
+        const credential = GoogleAuthProvider.credentialFromResult(result)
+        if (credential?.accessToken && onOAuthTokenCallback) {
+          onOAuthTokenCallback(credential.accessToken)
+        }
       }
     }
   }).catch((error) => {
+    // Connecting YouTube with a different Google account than the TuneCraft login
+    // (auth/user-mismatch, auth/credential-already-in-use) still yields a usable token
+    if (youtubeConnectPending) {
+      const credential = GoogleAuthProvider.credentialFromError(error)
+      if (credential?.accessToken && onOAuthTokenCallback) {
+        onOAuthTokenCallback(credential.accessToken)
+        return
+      }
+    }
     if (error?.code && error.code !== 'auth/popup-closed-by-user') {
       console.error('[Auth] Redirect result error:', error.code, error.message)
     }
@@ -128,6 +162,34 @@ export const authClient = {
     }
   },
 
+  // Ask Google for YouTube read access for the signed-in user (redirects away).
+  // Google users re-confirm their Google account; others (GitHub) link a Google account.
+  async connectYouTube() {
+    await authReady
+    if (!currentUser) throw new Error('Sign in first to connect YouTube.')
+
+    try {
+      sessionStorage.setItem(YOUTUBE_CONNECT_FLAG, '1')
+    } catch {
+      // Storage blocked: the token can't be kept after the redirect
+      throw new Error('Your browser blocks storage for this site, so YouTube can\'t be connected.')
+    }
+
+    const hasGoogleLogin = currentUser.providerData.some(p => p.providerId === 'google.com')
+    try {
+      if (hasGoogleLogin) {
+        await reauthenticateWithRedirect(currentUser, youtubeProvider)
+      } else {
+        await linkWithRedirect(currentUser, youtubeProvider)
+      }
+    } catch (error) {
+      takeYouTubeConnectFlag()
+      const message = extractErrorMessage(error)
+      console.error('[Auth] connectYouTube error:', message)
+      throw new Error(message)
+    }
+  },
+
   // Sign out
   async signOut() {
     try {
@@ -173,7 +235,7 @@ export function getUserId() {
 }
 
 // Register callback for when Google OAuth access token is received
-// (called after Google sign-in redirect with YouTube scope)
+// (called after the "Connect YouTube" redirect returns with the YouTube scope)
 export function onOAuthToken(callback) {
   onOAuthTokenCallback = callback
 }

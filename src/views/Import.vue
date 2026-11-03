@@ -125,8 +125,8 @@ const BLOCKED_CHANNELS = [
   'Bloomberg', 'CNBC', 'CNN', 'BBC', 'Reuters', 'NPR'
 ]
 
-// YouTube access: token comes from Google sign-in (same login)
-// If token expired, user can re-authenticate to get a fresh one
+// YouTube access: separate "Connect YouTube" step (sign-in asks only for name + email)
+// The token lasts ~1 hour; after that the same button gets a fresh one
 const needsYouTubeReconnect = computed(() => !auth.isYouTubeTokenValid)
 
 // Submit songs for background processing
@@ -181,7 +181,7 @@ async function submitBackgroundImport(type, songs) {
 
 async function importYouTubePlaylists() {
   if (!auth.isYouTubeTokenValid) {
-    auth.reconnectYouTube()
+    auth.connectYouTube()
     return
   }
 
@@ -333,7 +333,7 @@ async function importYouTubePlaylists() {
 
 async function importYouTubeLikes() {
   if (!auth.isYouTubeTokenValid) {
-    auth.reconnectYouTube()
+    auth.connectYouTube()
     return
   }
 
@@ -748,21 +748,29 @@ function dismissActiveJob() {
 
     <!-- YouTube Tab -->
     <div v-if="activeTab === 'youtube'" class="space-y-6">
-      <!-- YouTube token expired — re-authenticate to refresh -->
+      <!-- Not connected yet, or token expired — ask Google for YouTube read access -->
       <div v-if="needsYouTubeReconnect" class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-6">
         <div class="flex items-start gap-4">
-          <span class="text-3xl">🔄</span>
+          <span class="text-3xl">{{ auth.hasYouTubeAccess ? '🔄' : '📺' }}</span>
           <div class="flex-1">
-            <h3 class="font-semibold text-white mb-2">YouTube Access Expired</h3>
-            <p class="text-sm text-zinc-400 mb-4">
-              Your YouTube access has expired. Sign in again to refresh it.
+            <h3 class="font-semibold text-white mb-2">
+              {{ auth.hasYouTubeAccess ? 'YouTube Access Expired' : 'Connect YouTube' }}
+            </h3>
+            <p class="text-sm text-zinc-400 mb-2">
+              {{ auth.hasYouTubeAccess
+                ? 'Your YouTube access has expired. Connect again to refresh it.'
+                : 'Give TuneCraft read-only access to your YouTube playlists and liked videos.' }}
+            </p>
+            <p class="text-xs text-zinc-500 mb-4">
+              Google may show "Google hasn't verified this app". To continue, tap Advanced, then Go to tunecraft.music.
             </p>
             <button
-              @click="auth.reconnectYouTube"
+              @click="auth.connectYouTube"
               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
-              Reconnect YouTube
+              {{ auth.hasYouTubeAccess ? 'Reconnect YouTube' : 'Connect YouTube' }}
             </button>
+            <p v-if="auth.error" role="alert" class="text-sm text-red-400 mt-3">{{ auth.error }}</p>
           </div>
         </div>
       </div>

@@ -23,8 +23,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
+// Sign-in asks Google only for name + email. Those scopes need no Google review,
+// so users never see the "Google hasn't verified this app" screen when signing in.
 export const googleProvider = new GoogleAuthProvider()
-// Request YouTube read access during Google sign-in (single login instead of two)
-googleProvider.addScope('https://www.googleapis.com/auth/youtube.readonly')
+
+// YouTube read access is asked separately, only when the user connects YouTube.
+// youtube.readonly is a sensitive scope: until Google verifies the app, this step
+// shows Google's "hasn't verified this app" screen.
+export const youtubeProvider = new GoogleAuthProvider()
+youtubeProvider.addScope('https://www.googleapis.com/auth/youtube.readonly')
 
 export const githubProvider = new GithubAuthProvider()
