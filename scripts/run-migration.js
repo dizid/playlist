@@ -52,8 +52,9 @@ async function runMigration() {
         if (!trimmed || trimmed.startsWith('--')) continue;
 
         try {
-          // Use raw query for DDL statements
-          await sql.unsafe(trimmed);
+          // Execute raw DDL. Neon driver v1: sql.unsafe() only builds a fragment for
+          // tagged templates and never runs it, so it must be sql.query() here.
+          await sql.query(trimmed);
           // Show first 50 chars of the statement
           const preview = trimmed.replace(/\s+/g, ' ').substring(0, 60);
           console.log(`  ✓ ${preview}...`);
