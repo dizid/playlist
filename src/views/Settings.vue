@@ -267,6 +267,7 @@ async function confirmDelete() {
           <li>All songs in your library</li>
           <li>All playlists</li>
           <li>All play history</li>
+          <li>Connected services (Last.fm, ListenBrainz) and import history</li>
         </ul>
 
         <p class="text-zinc-400 mb-4">

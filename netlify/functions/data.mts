@@ -93,6 +93,12 @@ export default async (req: Request, context: Context) => {
 
     // DELETE /api/data - Delete all user data (full reset)
     if (req.method === 'DELETE') {
+      // 0. Stop syncs first: a connected Last.fm/ListenBrainz account would otherwise
+      //    re-import plays on the next hourly run. Also drop import jobs and push subscriptions.
+      await sql`DELETE FROM connections WHERE user_id = ${userId}`
+      await sql`DELETE FROM import_jobs WHERE user_id = ${userId}`
+      await sql`DELETE FROM push_subscriptions WHERE user_id = ${userId}`
+
       // Delete in order due to foreign key constraints
       // 1. Delete play history first (references songs)
       await sql`DELETE FROM play_history WHERE user_id = ${userId}`
