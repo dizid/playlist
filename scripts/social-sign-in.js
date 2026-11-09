@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process, console */
 // Social sign-in providers (GitHub, Facebook, X) in Firebase Auth for TuneCraft.
 //
 //   node scripts/social-sign-in.js status            which providers are switched on in Firebase
