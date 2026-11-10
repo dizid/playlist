@@ -12,6 +12,17 @@
   port = 8888
   autoLaunch = false
 
+# Basic security headers (T-0325). SAMEORIGIN, not DENY: the Firebase sign-in helper is
+# proxied on our own domain (/__/auth/*) and runs in an iframe on our own pages.
+# No payment=() in Permissions-Policy so a future Stripe/Apple Pay button isn't blocked.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
 # Firebase Auth handler proxy - keeps sign-in on our own domain (authDomain = tunecraft.music).
 # Without this, signInWithRedirect breaks in Chrome/Safari/Firefox because the auth helper
 # on firebaseapp.com is third-party and its storage is partitioned (user returns signed out).
