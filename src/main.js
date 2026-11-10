@@ -1,6 +1,7 @@
 import { createApp, createSSRApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
+import { reloadOnStaleChunks } from './lib/staleChunkReload.js'
 import App from './App.vue'
 import './style.css'
 
@@ -15,6 +16,8 @@ const app = hydrate ? createSSRApp(App) : createApp(App)
 
 app.use(createPinia())
 app.use(router)
+// Tabs still open from before a deploy: reload the target page instead of a dead tap
+reloadOnStaleChunks(router)
 
 if (hydrate) {
   // Hydration needs the route (and its lazy component) resolved first
