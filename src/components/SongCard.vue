@@ -76,16 +76,16 @@ async function logPlayEvent() {
       >
         {{ song.title }}
       </p>
-      <p class="text-sm text-zinc-500 truncate">
+      <p class="text-sm text-zinc-450 truncate">
         {{ song.artist || song.channel }}
       </p>
-      <div class="flex items-center gap-3 mt-1 text-xs text-zinc-600">
+      <div class="flex items-center gap-3 mt-1 text-xs text-zinc-450">
         <span v-if="song.play_count">{{ song.play_count }} plays</span>
         <span v-if="song.popularity" class="text-indigo-400">🔥 {{ song.popularity }}%</span>
-        <span v-if="song.genres?.length" class="text-zinc-500">
+        <span v-if="song.genres?.length" class="text-zinc-450">
           {{ song.genres.slice(0, 2).join(', ') }}
         </span>
-        <span v-if="!hasValidYouTube" class="text-zinc-500" title="No video linked yet: play opens a YouTube search">
+        <span v-if="!hasValidYouTube" class="text-zinc-450" title="No video linked yet: play opens a YouTube search">
           YouTube search
         </span>
         <button

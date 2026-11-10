@@ -122,7 +122,7 @@ onUnmounted(() => {
           />
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-white truncate">{{ auth.userName }}</p>
-            <p class="text-xs text-zinc-500 truncate">{{ auth.userEmail }}</p>
+            <p class="text-xs text-zinc-450 truncate">{{ auth.userEmail }}</p>
           </div>
         </div>
         <button
@@ -219,7 +219,7 @@ onUnmounted(() => {
             />
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-white truncate">{{ auth.userName }}</p>
-              <p class="text-xs text-zinc-500 truncate">{{ auth.userEmail }}</p>
+              <p class="text-xs text-zinc-450 truncate">{{ auth.userEmail }}</p>
             </div>
           </div>
           <button

@@ -611,7 +611,7 @@ function dismissActiveJob() {
               <span v-if="activeJob.inserted_items"> • {{ activeJob.inserted_items }} added</span>
               <span v-if="activeJob.skipped_items"> • {{ activeJob.skipped_items }} skipped</span>
             </p>
-            <p v-if="activeJob.status === 'pending' || activeJob.status === 'processing'" class="text-xs text-zinc-500 mt-1">
+            <p v-if="activeJob.status === 'pending' || activeJob.status === 'processing'" class="text-xs text-zinc-450 mt-1">
               You can close this page - we'll notify you when done
             </p>
             <p v-if="activeJob.error_message" class="text-sm text-red-400 mt-1">
@@ -683,7 +683,7 @@ function dismissActiveJob() {
                 :style="{ width: `${(importProgress.current / importProgress.total) * 100}%` }"
               ></div>
             </div>
-            <p class="text-sm text-zinc-500 mt-1">
+            <p class="text-sm text-zinc-450 mt-1">
               {{ importProgress.current }} / {{ importProgress.total }}
             </p>
           </div>
@@ -703,7 +703,7 @@ function dismissActiveJob() {
             <span>🔔</span>
             <span class="text-white">Browser notifications</span>
           </div>
-          <div v-if="!pushSupported" class="text-sm text-zinc-500">Not supported</div>
+          <div v-if="!pushSupported" class="text-sm text-zinc-450">Not supported</div>
           <div v-else-if="pushSubscribed" class="text-sm text-green-400">Enabled</div>
           <button
             v-else
@@ -724,7 +724,7 @@ function dismissActiveJob() {
             class="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 text-sm"
           />
         </div>
-        <p class="text-xs text-zinc-500 pl-7">Check your spam folder if you don't see the email</p>
+        <p class="text-xs text-zinc-450 pl-7">Check your spam folder if you don't see the email</p>
       </div>
     </div>
 
@@ -761,7 +761,7 @@ function dismissActiveJob() {
                 ? 'Your YouTube access has expired. Connect again to refresh it.'
                 : 'Give TuneCraft read-only access to your YouTube playlists and liked videos.' }}
             </p>
-            <p class="text-xs text-zinc-500 mb-4">
+            <p class="text-xs text-zinc-450 mb-4">
               Google may show "Google hasn't verified this app". To continue, tap Advanced, then Go to tunecraft.music.
             </p>
             <button

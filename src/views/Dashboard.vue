@@ -131,7 +131,7 @@ const quickActions = [
             </div>
             <div>
               <p class="text-2xl font-bold text-white">{{ stat.value }}</p>
-              <p class="text-xs text-zinc-500">{{ stat.label }}</p>
+              <p class="text-xs text-zinc-450">{{ stat.label }}</p>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ const quickActions = [
                 {{ pl.type === 'smart' ? 'Smart' : 'Manual' }}
               </span>
             </div>
-            <p class="text-sm text-zinc-500">
+            <p class="text-sm text-zinc-450">
               {{ pl.song_ids?.length || pl.song_count || '—' }} songs
             </p>
           </router-link>
@@ -263,7 +263,7 @@ const quickActions = [
             :key="song.id"
             class="flex items-center gap-4 p-4"
           >
-            <span class="w-6 text-center text-zinc-500 font-medium">{{ index + 1 }}</span>
+            <span class="w-6 text-center text-zinc-450 font-medium">{{ index + 1 }}</span>
             <img
               v-if="song.thumbnail"
               :src="song.thumbnail"
@@ -272,9 +272,9 @@ const quickActions = [
             />
             <div class="flex-1 min-w-0">
               <p class="font-medium text-white truncate">{{ song.title }}</p>
-              <p class="text-sm text-zinc-500 truncate">{{ song.artist || song.channel }}</p>
+              <p class="text-sm text-zinc-450 truncate">{{ song.artist || song.channel }}</p>
             </div>
-            <span class="text-sm text-zinc-500">{{ song.play_count }} plays</span>
+            <span class="text-sm text-zinc-450">{{ song.play_count }} plays</span>
           </div>
         </div>
       </div>
@@ -284,7 +284,7 @@ const quickActions = [
         v-if="library.songs.length === 0 && !library.isLoading"
         class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto text-zinc-600 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto text-zinc-450 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         <h3 class="text-xl font-semibold text-white mb-2">No music yet</h3>
         <p class="text-zinc-400 mb-6">Import your music to get started</p>
         <router-link

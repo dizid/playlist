@@ -131,7 +131,7 @@ async function confirmDelete() {
         />
         <div>
           <p class="font-medium text-white">{{ auth.userName }}</p>
-          <p class="text-sm text-zinc-500">{{ auth.userEmail }}</p>
+          <p class="text-sm text-zinc-450">{{ auth.userEmail }}</p>
         </div>
       </div>
     </div>
@@ -168,14 +168,14 @@ async function confirmDelete() {
             <span class="text-xl">🎤</span>
             <span class="text-white">Shazam</span>
           </div>
-          <span class="text-sm text-zinc-500">Import CSV</span>
+          <span class="text-sm text-zinc-450">Import CSV</span>
         </div>
         <div class="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
           <div class="flex items-center gap-3">
             <span class="text-xl">🎧</span>
             <span class="text-white">Spotify</span>
           </div>
-          <span class="text-sm text-zinc-500">Coming soon</span>
+          <span class="text-sm text-zinc-450">Coming soon</span>
         </div>
       </div>
     </div>
@@ -188,7 +188,7 @@ async function confirmDelete() {
         <div class="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
           <div>
             <p class="text-white">Push Notifications</p>
-            <p class="text-sm text-zinc-500 mt-0.5">
+            <p class="text-sm text-zinc-450 mt-0.5">
               <template v-if="!pushSupported">Not supported in this browser</template>
               <template v-else-if="pushPermission === 'denied'">Notifications blocked. Enable in browser settings.</template>
               <template v-else-if="pushEnabled">Enabled</template>

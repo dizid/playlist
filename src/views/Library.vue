@@ -162,7 +162,7 @@ const filteredSongs = computed(() => {
       <!-- Result count when filtering -->
       <span
         v-if="searchQuery || activeFilterCount > 0"
-        class="ml-auto text-sm text-zinc-500"
+        class="ml-auto text-sm text-zinc-450"
         aria-live="polite"
       >
         Showing {{ filteredSongs.length }} of {{ library.songs.length }} songs
@@ -215,7 +215,7 @@ const filteredSongs = computed(() => {
       <!-- No genres/moods available -->
       <p
         v-if="!library.availableGenres.length && !library.availableMoods.length"
-        class="text-sm text-zinc-500"
+        class="text-sm text-zinc-450"
       >
         No genres or moods tagged yet. Enrich your songs to enable filtering.
       </p>

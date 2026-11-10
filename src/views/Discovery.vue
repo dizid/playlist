@@ -68,7 +68,7 @@ function clearFilters() {
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-white">Filter by taste</h3>
-        <span class="text-sm text-zinc-500">
+        <span class="text-sm text-zinc-450">
           {{ taggedSongsCount }} / {{ library.songCount }} songs tagged
         </span>
       </div>
@@ -107,7 +107,7 @@ function clearFilters() {
         >
           Clear filters
         </button>
-        <span class="text-sm text-zinc-500">
+        <span class="text-sm text-zinc-450">
           {{ filteredSongs.length }} songs match
         </span>
       </div>

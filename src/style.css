@@ -8,6 +8,8 @@
   --color-surface-light: #27272a;
   --color-text: #fafafa;
   --color-text-muted: #a1a1aa;
+  /* small grey text: 4.5:1+ on every dark surface incl. #27272a cards (WCAG AA) */
+  --color-zinc-450: #8e8e97;
 }
 
 /* Base styles */

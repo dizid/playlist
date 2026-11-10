@@ -159,7 +159,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
       lands here automatically, with real play counts. No exports, no uploads.
     </p>
 
-    <div v-if="isLoading" class="text-sm text-zinc-500" aria-live="polite">Loading connections...</div>
+    <div v-if="isLoading" class="text-sm text-zinc-450" aria-live="polite">Loading connections...</div>
 
     <div v-else class="grid gap-4 md:grid-cols-2">
       <div
@@ -197,7 +197,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
               </span>
               plays imported
             </template>
-            <span class="text-zinc-600"> · synced {{ timeAgo(connections[service.id].last_synced_at) }}</span>
+            <span class="text-zinc-450"> · synced {{ timeAgo(connections[service.id].last_synced_at) }}</span>
           </p>
 
           <div
@@ -210,7 +210,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
           >
             <div class="h-full bg-indigo-500 transition-all duration-300" :style="{ width: progressPercent(connections[service.id]) + '%' }"></div>
           </div>
-          <p v-if="syncing[service.id] && !connections[service.id].backfill_done" class="text-xs text-zinc-500 mt-2">
+          <p v-if="syncing[service.id] && !connections[service.id].backfill_done" class="text-xs text-zinc-450 mt-2">
             Importing your history. You can leave this page; it continues in the background every hour.
           </p>
 
@@ -249,7 +249,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
               </button>
             </template>
           </div>
-          <p v-if="confirmDisconnect === service.id" class="text-xs text-zinc-500 mt-2">
+          <p v-if="confirmDisconnect === service.id" class="text-xs text-zinc-450 mt-2">
             Songs and plays already imported stay in your library.
           </p>
         </div>
@@ -280,7 +280,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
 
           <details class="mt-3 text-sm">
             <summary class="text-zinc-400 cursor-pointer hover:text-white">How do my plays get into {{ service.name }}?</summary>
-            <ul class="mt-2 space-y-1 text-zinc-500">
+            <ul class="mt-2 space-y-1 text-zinc-450">
               <li v-for="tip in service.help" :key="tip.label">
                 <span class="text-zinc-300">{{ tip.label }}:</span>
                 {{ tip.text }}
@@ -297,6 +297,6 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
     </div>
 
     <!-- Required by the Last.fm API terms -->
-    <p class="text-xs text-zinc-600 mt-4">Last.fm data powered by AudioScrobbler.</p>
+    <p class="text-xs text-zinc-450 mt-4">Last.fm data powered by AudioScrobbler.</p>
   </section>
 </template>

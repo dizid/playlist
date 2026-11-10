@@ -67,7 +67,7 @@ onMounted(async () => {
         <p class="text-lg md:text-xl text-zinc-400 mb-4 max-w-2xl mx-auto">
           TuneCraft consolidates YouTube, Shazam, and Spotify into one smart library you actually own.
         </p>
-        <p class="text-zinc-500 mb-10">
+        <p class="text-zinc-450 mb-10">
           Own your taste data. Smart playlists. Zero algorithm slop.
         </p>
 
@@ -118,7 +118,7 @@ onMounted(async () => {
           </button>
         </div>
 
-        <p class="mt-4 text-sm text-zinc-600">
+        <p class="mt-4 text-sm text-zinc-450">
           We import your music data for personal use only. Read-only access — no posting, no tracking.
         </p>
       </div>
@@ -223,7 +223,7 @@ onMounted(async () => {
                 <div class="flex gap-3 text-sm">
                   <span class="text-red-500">Loved</span>
                   <span class="text-green-500">Liked</span>
-                  <span class="text-zinc-500">Skip</span>
+                  <span class="text-zinc-450">Skip</span>
                 </div>
               </div>
             </div>
@@ -269,9 +269,9 @@ onMounted(async () => {
 
     <!-- Footer -->
     <footer class="py-8 px-4 text-center border-t border-zinc-800">
-      <p class="text-sm text-zinc-500 mb-1">Built for music lovers who own their data.</p>
-      <p class="text-xs text-zinc-600">TuneCraft - Your taste, your data, your rules.</p>
-      <p class="text-xs text-zinc-500 mt-3">
+      <p class="text-sm text-zinc-450 mb-1">Built for music lovers who own their data.</p>
+      <p class="text-xs text-zinc-450">TuneCraft - Your taste, your data, your rules.</p>
+      <p class="text-xs text-zinc-450 mt-3">
         <router-link to="/privacy" class="hover:text-zinc-300">Privacy</router-link>
         <span class="mx-2" aria-hidden="true">·</span>
         <router-link to="/terms" class="hover:text-zinc-300">Terms</router-link>

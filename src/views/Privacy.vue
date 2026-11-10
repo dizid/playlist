@@ -9,7 +9,7 @@ const CONTACT_EMAIL = 'dev@dizid.com'
   <div class="max-w-3xl mx-auto px-4 py-10 md:py-16">
     <router-link to="/" class="text-sm text-indigo-400 hover:text-indigo-300">&larr; TuneCraft</router-link>
     <h1 class="text-3xl font-bold text-white mt-4 mb-2">Privacy Policy</h1>
-    <p class="text-sm text-zinc-500 mb-8">Last updated: {{ LAST_UPDATED }}</p>
+    <p class="text-sm text-zinc-450 mb-8">Last updated: {{ LAST_UPDATED }}</p>
 
     <div class="space-y-6 text-zinc-400 leading-relaxed">
       <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">

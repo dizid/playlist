@@ -173,7 +173,7 @@ function goBack() {
 
       <!-- Empty state -->
       <div v-else class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl">
-        <svg class="w-12 h-12 mx-auto text-zinc-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto text-zinc-450 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
         <h3 class="text-xl font-semibold text-white mb-2">No Songs Found</h3>
