@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /library
+Disallow: /import
+Disallow: /playlist/
+Disallow: /discover
+Disallow: /settings
+Disallow: /__/
+Disallow: /.netlify/
+
+Sitemap: https://tunecraft.music/sitemap.xml

@@ -1,0 +1,20 @@
+# TuneCraft
+
+> TuneCraft (https://tunecraft.music) is a free personal music layer on top of YouTube. It pulls your listening from several places into one library you own (ratings, play counts, tags), builds smart playlists from it, and plays songs on YouTube. It is a companion app, not a player. Made by Dizid (https://dizid.com), Marc de Ruijter.
+
+## What it does
+- Import: YouTube playlists, Shazam history (CSV export) and Google Takeout YouTube watch history land in one library. Spotify import is listed as coming soon.
+- Connections: link a Last.fm or ListenBrainz account and your scrobbles keep syncing in automatically.
+- Auto-enrichment: genres and moods are tagged for you; you rate songs as loved, liked or skip, and your taste profile builds from that.
+- Smart playlists that update themselves as your taste changes, such as Top 50, Heavy Rotation and Fresh Loves.
+- Rediscover: surfaces forgotten favourites from your own library.
+- Playback: one click opens the song on YouTube; TuneCraft keeps the data, YouTube plays the music.
+
+## Account and data
+- Free. Sign in with Google.
+- Your library is yours: Settings has delete-all-data, which removes songs, connections, import history and push subscriptions.
+- Privacy policy: https://tunecraft.music/privacy
+- Terms: https://tunecraft.music/terms
+
+## Who it is for
+- People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.
