@@ -52,6 +52,13 @@ const routes = [
     name: 'settings',
     component: () => import('./views/Settings.vue'),
     meta: { requiresAuth: true }
+  },
+  // Any other URL: "Page not found" instead of an empty page. Must stay last.
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('./views/NotFound.vue'),
+    meta: { noindex: true }
   }
 ]
 
@@ -94,7 +101,8 @@ const routeTitles = {
   'import': 'Import | TuneCraft',
   'discover': 'Discover | TuneCraft',
   'settings': 'Settings | TuneCraft',
-  'playlist': 'Playlist | TuneCraft'
+  'playlist': 'Playlist | TuneCraft',
+  'not-found': 'Page not found | TuneCraft'
 }
 
 router.afterEach((to) => {
@@ -103,14 +111,14 @@ router.afterEach((to) => {
   // Set page title based on route
   document.title = routeTitles[to.name] || 'TuneCraft'
 
-  // Don't index authenticated pages
+  // Don't index authenticated pages or the not-found page (the server answers 200 there)
   let robotsMeta = document.querySelector('meta[name="robots"]')
   if (!robotsMeta) {
     robotsMeta = document.createElement('meta')
     robotsMeta.name = 'robots'
     document.head.appendChild(robotsMeta)
   }
-  robotsMeta.content = to.meta.requiresAuth ? 'noindex, nofollow' : 'index, follow'
+  robotsMeta.content = to.meta.requiresAuth || to.meta.noindex ? 'noindex, nofollow' : 'index, follow'
 })
 
 export default router
