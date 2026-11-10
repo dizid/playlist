@@ -10,8 +10,10 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref(null)
   const session = ref(null)
-  const youtubeToken = ref(localStorage.getItem(YOUTUBE_TOKEN_KEY) || null)
-  const storedExpiry = localStorage.getItem(YOUTUBE_TOKEN_EXPIRY_KEY)
+  // typeof guard: this store is also created during the build-time prerender (Node)
+  const hasStorage = typeof localStorage !== 'undefined'
+  const youtubeToken = ref((hasStorage && localStorage.getItem(YOUTUBE_TOKEN_KEY)) || null)
+  const storedExpiry = hasStorage ? localStorage.getItem(YOUTUBE_TOKEN_EXPIRY_KEY) : null
   const youtubeTokenExpiry = ref(storedExpiry ? parseInt(storedExpiry, 10) : null)
   const isLoading = ref(false)
   const error = ref(null)

@@ -101,8 +101,13 @@ function initAuthReady() {
   })
 }
 
-// Initialize on module load
-initAuthReady()
+// Initialize on module load (browser only: the build-time prerender of the landing page,
+// src/entry-server.js, imports this in Node, where Firebase's redirect check can't run)
+if (typeof window !== 'undefined') {
+  initAuthReady()
+} else {
+  authReady = Promise.resolve()
+}
 
 // Wait for Firebase to determine initial auth state
 export function waitForAuthReady() {

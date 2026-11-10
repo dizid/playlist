@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createMemoryHistory, createWebHistory } from 'vue-router'
 
 const routes = [
   {
@@ -56,7 +56,8 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  // Memory history during the build-time prerender (src/entry-server.js runs in Node)
+  history: import.meta.env.SSR ? createMemoryHistory() : createWebHistory(),
   routes
 })
 
@@ -94,6 +95,8 @@ const routeTitles = {
 }
 
 router.afterEach((to) => {
+  // Browser only: this also runs during the build-time prerender (Node, no document)
+  if (typeof document === 'undefined') return
   // Set page title based on route
   document.title = routeTitles[to.name] || 'TuneCraft'
 
