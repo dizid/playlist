@@ -86,6 +86,9 @@ router.beforeEach(async (to, from, next) => {
 // Per-route page titles for SEO
 const routeTitles = {
   'landing': 'TuneCraft - Your Music Layer on YouTube',
+  // Same titles as the prerendered pages (scripts/prerender.mjs)
+  'privacy': 'Privacy Policy | TuneCraft',
+  'terms': 'Terms of Service | TuneCraft',
   'dashboard': 'Dashboard | TuneCraft',
   'library': 'Library | TuneCraft',
   'import': 'Import | TuneCraft',
