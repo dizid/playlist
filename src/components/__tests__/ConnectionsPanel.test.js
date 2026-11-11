@@ -49,6 +49,16 @@ describe('ConnectionsPanel', () => {
     expect(wrapper.text()).toContain('powered by AudioScrobbler')
   })
 
+  it('tells Last.fm users upfront that their listening history must not be hidden', async () => {
+    api.getConnections.mockResolvedValue([])
+    const wrapper = mount(ConnectionsPanel)
+    await flushPromises()
+
+    // Only under the Last.fm form (ListenBrainz listens are always public)
+    const notes = wrapper.findAll('p').filter((p) => p.text().includes('Hide recent listening information'))
+    expect(notes).toHaveLength(1)
+  })
+
   it('connects, then keeps syncing until the whole history is imported', async () => {
     api.getConnections.mockResolvedValue([])
     api.connectService.mockResolvedValue(connection({ status: 'pending' }))

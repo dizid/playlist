@@ -15,9 +15,13 @@ const SERVICES = [
     placeholder: 'Your Last.fm username',
     profileUrl: (username) => `https://www.last.fm/user/${encodeURIComponent(username)}`,
     signupUrl: 'https://www.last.fm/join',
+    // Shown under the username field before connecting (the API answers error 17 otherwise)
+    note: 'Your Last.fm listening history must be visible: in Last.fm\'s privacy settings, keep "Hide recent listening information" off.',
     help: [
       { label: 'Spotify', text: 'on last.fm open Settings → Applications → Spotify Scrobbling → Connect.' },
       { label: 'YouTube Music / YouTube', text: 'install the free Web Scrobbler browser extension and sign in with Last.fm.', url: 'https://web-scrobbler.com/' },
+      // Last.fm FAQ "YouTube and YouTube Music Scrobbling" (checked 11 Nov 2026)
+      { label: 'YouTube apps on your phone', text: 'on Android, the Last.fm app or Pano Scrobbler can scrobble the YouTube and YouTube Music apps; on iPhone the YouTube apps can\'t be scrobbled, so use Web Scrobbler in Safari.', url: 'https://support.last.fm/t/youtube-and-youtube-music-scrobbling/173' },
       { label: 'Apple Music and others', text: 'see Last.fm\'s list of supported players.', url: 'https://www.last.fm/about/trackmymusic' }
     ]
   },
@@ -30,6 +34,7 @@ const SERVICES = [
     help: [
       { label: 'Spotify', text: 'on listenbrainz.org open Settings → Connect services → Spotify.' },
       { label: 'YouTube Music / YouTube', text: 'install the Web Scrobbler extension and enable ListenBrainz.', url: 'https://web-scrobbler.com/' },
+      { label: 'YouTube Music app on Android', text: 'Pano Scrobbler can send its plays to ListenBrainz (see ListenBrainz\'s list of apps).', url: 'https://listenbrainz.org/add-data/' },
       { label: 'Free and open', text: 'run by the non-profit MetaBrainz Foundation.' }
     ]
   }
@@ -276,6 +281,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
               {{ connecting[service.id] ? 'Checking...' : 'Connect' }}
             </button>
           </form>
+          <p v-if="service.note" class="text-xs text-zinc-500 mt-2">{{ service.note }}</p>
           <p v-if="errors[service.id]" class="text-sm text-red-400 mt-2" role="alert">{{ errors[service.id] }}</p>
 
           <details class="mt-3 text-sm">
