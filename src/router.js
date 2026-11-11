@@ -17,6 +17,17 @@ const routes = [
     name: 'terms',
     component: () => import('./views/Terms.vue')
   },
+  // Public guides (posts live in src/content/posts; prerendered by scripts/prerender.mjs)
+  {
+    path: '/blog',
+    name: 'blog',
+    component: () => import('./views/BlogIndex.vue')
+  },
+  {
+    path: '/blog/:slug',
+    name: 'blog-post',
+    component: () => import('./views/BlogPost.vue')
+  },
   {
     path: '/dashboard',
     name: 'dashboard',
@@ -96,6 +107,8 @@ const routeTitles = {
   // Same titles as the prerendered pages (scripts/prerender.mjs)
   'privacy': 'Privacy Policy | TuneCraft',
   'terms': 'Terms of Service | TuneCraft',
+  'blog': 'Guides: your music history, exported | TuneCraft',
+  // 'blog-post': set per post by src/views/BlogPost.vue
   'dashboard': 'Dashboard | TuneCraft',
   'library': 'Library | TuneCraft',
   'import': 'Import | TuneCraft',

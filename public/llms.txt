@@ -16,5 +16,11 @@
 - Privacy policy: https://tunecraft.music/privacy
 - Terms: https://tunecraft.music/terms
 
+## Guides
+Step-by-step guides, checked against each service's own help pages (index: https://tunecraft.music/blog):
+- [How to export your YouTube and YouTube Music history with Google Takeout](https://tunecraft.music/blog/export-youtube-music-history-google-takeout)
+- [How to export your Shazam history](https://tunecraft.music/blog/export-shazam-history)
+- [Last.fm vs ListenBrainz for keeping your listening history](https://tunecraft.music/blog/lastfm-vs-listenbrainz)
+
 ## Who it is for
 - People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.

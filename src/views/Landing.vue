@@ -272,6 +272,8 @@ onMounted(async () => {
       <p class="text-sm text-zinc-500 mb-1">Built for music lovers who own their data.</p>
       <p class="text-xs text-zinc-600">TuneCraft - Your taste, your data, your rules.</p>
       <p class="text-xs text-zinc-500 mt-3">
+        <router-link to="/blog" class="hover:text-zinc-300">Guides</router-link>
+        <span class="mx-2" aria-hidden="true">·</span>
         <router-link to="/privacy" class="hover:text-zinc-300">Privacy</router-link>
         <span class="mx-2" aria-hidden="true">·</span>
         <router-link to="/terms" class="hover:text-zinc-300">Terms</router-link>
