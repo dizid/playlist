@@ -3,7 +3,7 @@
 > TuneCraft (https://tunecraft.music) is a free personal music layer on top of YouTube. It pulls your listening from several places into one library you own (ratings, play counts, tags), builds smart playlists from it, and plays songs on YouTube. It is a companion app, not a player. Made by Dizid (https://dizid.com), Marc de Ruijter.
 
 ## What it does
-- Import: YouTube playlists, Shazam history (CSV export) and Google Takeout YouTube watch history land in one library. Spotify import is listed as coming soon.
+- Import: YouTube playlists, a Shazam list (CSV with title and artist; from Shazam's data request at shazam.com/privacy, an old My Shazam CSV or your own) and Google Takeout YouTube watch history (watch-history.html) land in one library. Spotify import is listed as coming soon.
 - Connections: link a Last.fm or ListenBrainz account and your scrobbles keep syncing in automatically.
 - Auto-enrichment: genres and moods are tagged for you; you rate songs as loved, liked or skip, and your taste profile builds from that.
 - Smart playlists that update themselves as your taste changes, such as Top 50, Heavy Rotation and Fresh Loves.
@@ -18,9 +18,9 @@
 
 ## Guides
 Step-by-step guides, checked against each service's own help pages (index: https://tunecraft.music/blog):
-- [How to export your YouTube and YouTube Music history with Google Takeout](https://tunecraft.music/blog/export-youtube-music-history-google-takeout)
-- [How to export your Shazam history](https://tunecraft.music/blog/export-shazam-history)
-- [Last.fm vs ListenBrainz for keeping your listening history](https://tunecraft.music/blog/lastfm-vs-listenbrainz)
+- [Export Your YouTube Music History with Google Takeout](https://tunecraft.music/blog/export-youtube-music-history-google-takeout)
+- [How to Export Your Shazam History (What Works in 2026): the old My Shazam CSV download is gone](https://tunecraft.music/blog/export-shazam-history)
+- [Last.fm vs ListenBrainz in 2026: Where to Keep Your Scrobbles](https://tunecraft.music/blog/lastfm-vs-listenbrainz)
 
 ## Who it is for
 - People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.

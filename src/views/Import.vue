@@ -815,12 +815,19 @@ function dismissActiveJob() {
     <!-- Shazam Tab -->
     <div v-if="activeTab === 'shazam'" class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
       <h3 class="font-semibold text-white mb-2">Import from Shazam</h3>
-      <p class="text-sm text-zinc-400 mb-4">
-        Upload your Shazam CSV export from
-        <a href="https://www.shazam.com/myshazam" target="_blank" class="text-indigo-400 hover:text-indigo-300">
-          shazam.com/myshazam
-        </a>
-      </p>
+      <!-- shazam.com/myshazam (the old CSV download) redirects to the app page since 2026; checked 11 Nov 2026 -->
+      <div class="text-sm text-zinc-400 mb-4 space-y-2">
+        <p>Upload a CSV file with a title column and an artist column.</p>
+        <p>
+          To get your Shazam list, request your data at
+          <a href="https://www.shazam.com/privacy" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300">shazam.com/privacy</a>
+          ("Download your data"); Shazam emails it within 30 days. A CSV from the old My Shazam page still works,
+          or make your own: a spreadsheet with Title and Artist columns, saved as CSV.
+        </p>
+        <p>
+          <a href="/blog/export-shazam-history" target="_blank" class="text-indigo-400 hover:text-indigo-300">How to export your Shazam history</a>
+        </p>
+      </div>
       <label class="block">
         <input
           type="file"
@@ -845,9 +852,13 @@ function dismissActiveJob() {
       <div class="text-sm text-zinc-400 mb-4 space-y-2">
         <p>1. Go to <a href="https://takeout.google.com" target="_blank" class="text-indigo-400 hover:text-indigo-300">takeout.google.com</a></p>
         <p>2. Deselect all, then select only "YouTube and YouTube Music"</p>
-        <p>3. Under YouTube, select only "history"</p>
-        <p>4. Export and download the ZIP</p>
-        <p>5. Extract and upload <code class="bg-zinc-800 px-1 rounded">watch-history.html</code></p>
+        <p>3. Click "All YouTube data included", then "Deselect all", tick only "history" and click OK</p>
+        <p>4. Leave History as HTML under "Multiple formats" (the JSON file can't be imported here)</p>
+        <p>5. Create the export and download the ZIP</p>
+        <p>6. Extract it and upload <code class="bg-zinc-800 px-1 rounded">watch-history.html</code> (in Takeout / YouTube and YouTube Music / history)</p>
+        <p>
+          <a href="/blog/export-youtube-music-history-google-takeout" target="_blank" class="text-indigo-400 hover:text-indigo-300">Step-by-step guide: what the file includes and misses</a>
+        </p>
       </div>
       <label class="block">
         <input
