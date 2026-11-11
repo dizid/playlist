@@ -21,6 +21,8 @@ Step-by-step guides, checked against each service's own help pages (index: https
 - [Export Your YouTube Music History with Google Takeout](https://tunecraft.music/blog/export-youtube-music-history-google-takeout)
 - [How to Export Your Shazam History (What Works in 2026): the old My Shazam CSV download is gone](https://tunecraft.music/blog/export-shazam-history)
 - [Last.fm vs ListenBrainz in 2026: Where to Keep Your Scrobbles](https://tunecraft.music/blog/lastfm-vs-listenbrainz)
+- [Where YouTube Music Shows Your Listening History and Stats](https://tunecraft.music/blog/youtube-music-listening-history-stats)
+- [YouTube Music Mixes and Playlists: What You Can and Cannot Set](https://tunecraft.music/blog/youtube-music-smart-playlists-mixes)
 
 ## Who it is for
 - People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.
