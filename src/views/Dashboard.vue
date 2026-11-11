@@ -51,10 +51,10 @@ const songsWithoutYouTube = computed(() =>
   library.songs.filter(s => s.youtube_id?.startsWith('shz')).length
 )
 
-// Stays 0 (hint hidden) on purpose: the "Enrich" link goes to Discover, which
-// has no way to start enrichment any more, so the hint would be a dead end.
+// Songs whose genres/moods haven't been looked up yet; "Enrich" opens Discover,
+// which has the "Find genres and moods" button
 const pendingEnrichment = computed(() =>
-  library.enrichmentStatus.pending || 0
+  library.enrichmentStatus?.metadata?.pending || 0
 )
 
 const hasInsights = computed(() =>

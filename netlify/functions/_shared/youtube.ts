@@ -24,10 +24,18 @@ export interface YouTubeSearchResult {
  * Search YouTube for a video matching artist and title
  * Returns the best matching video ID or null if not found
  */
+// Set when the last search failed because of the quota/key (403/429), so callers
+// can retry later instead of marking the song "not found" for good
+let quotaExceeded = false
+export function youtubeQuotaExceeded(): boolean {
+  return quotaExceeded
+}
+
 export async function searchYouTubeVideo(
   artist: string,
   title: string
 ): Promise<YouTubeSearchResult | null> {
+  quotaExceeded = false
   const apiKey = getYouTubeApiKey()
 
   if (!apiKey) {
@@ -52,6 +60,8 @@ export async function searchYouTubeVideo(
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.warn(`YouTube API error: ${response.status}`, errorData)
+      // 403 = daily quota used up (or key refused): not "this song doesn't exist"
+      if (response.status === 403 || response.status === 429) quotaExceeded = true
       return null
     }
 

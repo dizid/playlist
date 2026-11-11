@@ -1,9 +1,45 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useLibraryStore } from '../stores/library'
+import { api } from '../services/api'
 import SongCard from '../components/SongCard.vue'
 
 const library = useLibraryStore()
+
+// --- Automatic tagging (genres/moods from Last.fm tags) ---
+// Nothing called the tagger since Jan 2026, so Discover stayed empty unless
+// every song was tagged by hand. One click now works through the library in
+// small server batches (each call stops after ~7 s) until nothing is left.
+const MAX_ROUNDS = 60
+const tagging = ref(false)
+const tagProgress = ref({ done: 0, tagged: 0 })
+const tagMessage = ref('')
+const pendingTags = computed(() => library.enrichmentStatus?.metadata?.pending || 0)
+
+async function autoTag() {
+  if (tagging.value) return
+  tagging.value = true
+  tagMessage.value = ''
+  tagProgress.value = { done: 0, tagged: 0 }
+  try {
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const result = await api.enrichSongs({ all: true })
+      tagProgress.value = {
+        done: tagProgress.value.done + (result.processed || 0),
+        tagged: tagProgress.value.tagged + (result.enriched || 0)
+      }
+      if (!result.processed || (result.remaining?.metadata || 0) === 0) break
+    }
+    tagMessage.value = tagProgress.value.tagged > 0
+      ? `Tagged ${tagProgress.value.tagged} songs. Songs Last.fm has no tags for can still get "+ add tags".`
+      : "Last.fm had no genre or mood tags for these songs. You can still add them by hand."
+  } catch (e) {
+    tagMessage.value = "Tagging stopped early. Try again in a minute; nothing is lost."
+  } finally {
+    tagging.value = false
+    await Promise.all([library.fetchSongs(), library.fetchEnrichmentStatus()])
+  }
+}
 
 const selectedGenre = ref('all')
 const selectedMood = ref('all')
@@ -13,6 +49,7 @@ onMounted(() => {
   if (library.songs.length === 0) {
     library.fetchSongs()
   }
+  library.fetchEnrichmentStatus()
 })
 
 // Dynamic genre options from library
@@ -63,6 +100,27 @@ function clearFilters() {
   <div class="p-6 lg:p-8" role="main">
     <h1 class="text-2xl font-bold text-white mb-2">Discover</h1>
     <p class="text-zinc-400 mb-6">Filter your library by genre and mood</p>
+
+    <!-- Automatic tagging -->
+    <div
+      v-if="pendingTags > 0 || tagging || tagMessage"
+      class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+      aria-live="polite"
+    >
+      <p class="text-sm text-zinc-300">
+        <template v-if="tagging">Finding genres and moods… {{ tagProgress.done }} songs checked, {{ tagProgress.tagged }} tagged</template>
+        <template v-else-if="tagMessage">{{ tagMessage }}</template>
+        <template v-else><strong class="text-white">{{ pendingTags }}</strong> songs have no genre or mood yet. TuneCraft can look them up on Last.fm.</template>
+      </p>
+      <button
+        v-if="pendingTags > 0 && !tagging"
+        type="button"
+        class="shrink-0 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+        @click="autoTag"
+      >
+        Find genres and moods
+      </button>
+    </div>
 
     <!-- Filters -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">

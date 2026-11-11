@@ -2,7 +2,7 @@ import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 import { lookupTrackMetadata } from './_shared/metadata'
-import { searchYouTubeVideo } from './_shared/youtube'
+import { searchYouTubeVideo, youtubeQuotaExceeded } from './_shared/youtube'
 
 // Rate limit: 200ms between API requests
 const RATE_LIMIT_MS = 200
@@ -29,26 +29,26 @@ export default async (req: Request, context: Context) => {
     if (req.method === 'POST') {
       const body = await req.json()
 
-      // Get songs to enrich (metadata OR YouTube lookup needed)
+      // Songs that still need tags or a YouTube video. Only 'pending' tags: songs
+      // whose tags couldn't be found ('failed') or were set by hand ('manual')
+      // are not picked again, so they can't block the queue or be overwritten.
       let songsToEnrich
       if (body.songIds && Array.isArray(body.songIds)) {
-        // Specific songs
         songsToEnrich = await sql`
-          SELECT id, youtube_id, youtube_status, title, artist, channel
+          SELECT id, youtube_id, youtube_status, title, artist, channel, genres, moods, enrichment_status
           FROM songs
           WHERE user_id = ${userId}
             AND id = ANY(${body.songIds}::uuid[])
-            AND (enrichment_status IN ('pending', 'failed') OR youtube_status = 'pending')
+            AND (enrichment_status = 'pending' OR youtube_status = 'pending')
           LIMIT ${BATCH_SIZE}
         `
       } else if (body.all === true) {
-        // All pending songs
         songsToEnrich = await sql`
-          SELECT id, youtube_id, youtube_status, title, artist, channel
+          SELECT id, youtube_id, youtube_status, title, artist, channel, genres, moods, enrichment_status
           FROM songs
           WHERE user_id = ${userId}
-            AND (enrichment_status IN ('pending', 'failed') OR youtube_status = 'pending')
-          ORDER BY created_at DESC
+            AND (enrichment_status = 'pending' OR youtube_status = 'pending')
+          ORDER BY created_at DESC, id
           LIMIT ${BATCH_SIZE}
         `
       } else {
@@ -58,111 +58,90 @@ export default async (req: Request, context: Context) => {
       let enriched = 0
       let failed = 0
       let youtubeLinked = 0
-      const results: Array<{
-        id: string,
-        status: string,
-        genres?: string[],
-        moods?: string[],
-        youtubeId?: string
-      }> = []
+      let youtubePaused = false // YouTube quota used up: try again later
+      const results: Array<{ id: string, status: string, genres?: string[], moods?: string[], youtubeId?: string }> = []
+
+      // Synchronous functions are stopped after 10 s: stop early, the next call continues
+      const deadline = Date.now() + 7000
+      let processed = 0
 
       for (const song of songsToEnrich) {
-        const artistName = song.artist || song.channel || ''
-        const needsMetadata = !song.genres || song.genres.length === 0
-        const needsYouTube = song.youtube_status === 'pending' || song.youtube_id?.startsWith('shz')
+        if (Date.now() > deadline) break
+        processed++
+        // "Artist - Topic" channels name the artist; a plain channel name is a weak guess
+        const artistName = song.artist || (song.channel ? String(song.channel).replace(/ - Topic$/, '') : '')
+        const hasTags = (Array.isArray(song.genres) && song.genres.length > 0) || (Array.isArray(song.moods) && song.moods.length > 0)
+        const needsMetadata = song.enrichment_status === 'pending' && !hasTags
+        const needsYouTube = song.youtube_status === 'pending' || String(song.youtube_id || '').startsWith('shz')
 
-        let metadataResult = null
-        let youtubeResult = null
-
-        // 1. Lookup metadata from Last.fm (if needed)
+        // 1. Genres and moods from Last.fm tags
+        let metadata = null
         if (needsMetadata && artistName) {
-          metadataResult = await lookupTrackMetadata(artistName, song.title)
+          metadata = await lookupTrackMetadata(artistName, song.title)
           await delay(RATE_LIMIT_MS)
         }
+        const foundTags = !!metadata && (metadata.genres.length > 0 || metadata.moods.length > 0)
 
-        // 2. Search YouTube for video (if needed)
-        if (needsYouTube && artistName) {
-          youtubeResult = await searchYouTubeVideo(artistName, song.title)
+        // Tag status: found -> completed; looked up but nothing usable (or no
+        // artist to look up) -> failed; already tagged or set by hand -> unchanged
+        const newEnrichmentStatus = foundTags
+          ? 'completed'
+          : needsMetadata ? 'failed' : (hasTags && song.enrichment_status === 'pending' ? 'completed' : song.enrichment_status)
+
+        await sql`
+          UPDATE songs
+          SET
+            genres = CASE WHEN ${foundTags} THEN ${foundTags ? metadata.genres : []}::text[] ELSE genres END,
+            moods = CASE WHEN ${foundTags} THEN ${foundTags ? metadata.moods : []}::text[] ELSE moods END,
+            enrichment_status = ${newEnrichmentStatus},
+            updated_at = NOW()
+          WHERE id = ${song.id}::uuid AND user_id = ${userId}
+        `
+
+        // 2. A real YouTube video for songs that only have a stand-in id
+        let linkedVideo: string | null = null
+        if (needsYouTube && artistName && !youtubePaused) {
+          const video = await searchYouTubeVideo(artistName, song.title)
           await delay(RATE_LIMIT_MS)
+          if (video) {
+            // The same video may already be in the library (e.g. imported from a
+            // YouTube playlist): then keep this row as it is, instead of a
+            // unique-key error that used to stop all enrichment for good
+            const taken = await sql`
+              SELECT 1 FROM songs WHERE user_id = ${userId} AND youtube_id = ${video.videoId} AND id <> ${song.id}::uuid LIMIT 1
+            `
+            if (taken.length === 0) {
+              await sql`
+                UPDATE songs
+                SET youtube_id = ${video.videoId}, youtube_status = 'valid',
+                    thumbnail = COALESCE(thumbnail, ${video.thumbnail}), updated_at = NOW()
+                WHERE id = ${song.id}::uuid AND user_id = ${userId}
+              `
+              linkedVideo = video.videoId
+              youtubeLinked++
+            } else {
+              await sql`UPDATE songs SET youtube_status = 'not_found', updated_at = NOW() WHERE id = ${song.id}::uuid AND user_id = ${userId}`
+            }
+          } else if (youtubeQuotaExceeded()) {
+            // Quota or key problem: leave it 'pending' for a later run (was marked
+            // 'not_found' forever)
+            youtubePaused = true
+          } else {
+            await sql`UPDATE songs SET youtube_status = 'not_found', updated_at = NOW() WHERE id = ${song.id}::uuid AND user_id = ${userId}`
+          }
+        } else if (needsYouTube && !artistName && song.youtube_status === 'pending') {
+          // Nothing to search with
+          await sql`UPDATE songs SET youtube_status = 'not_found', updated_at = NOW() WHERE id = ${song.id}::uuid AND user_id = ${userId}`
         }
 
-        // Build update based on results
-        const hasMetadata = metadataResult && (metadataResult.genres.length > 0 || metadataResult.moods.length > 0)
-        const hasYouTube = youtubeResult !== null
-
-        if (hasMetadata && hasYouTube) {
-          // Both metadata and YouTube found
-          await sql`
-            UPDATE songs
-            SET
-              genres = ${metadataResult.genres}::text[],
-              moods = ${metadataResult.moods}::text[],
-              enrichment_status = 'completed',
-              youtube_id = ${youtubeResult.videoId},
-              youtube_status = 'valid',
-              thumbnail = COALESCE(thumbnail, ${youtubeResult.thumbnail}),
-              updated_at = NOW()
-            WHERE id = ${song.id}::uuid AND user_id = ${userId}
-          `
-          enriched++
-          youtubeLinked++
-          results.push({
-            id: song.id,
-            status: 'completed',
-            genres: metadataResult.genres,
-            moods: metadataResult.moods,
-            youtubeId: youtubeResult.videoId
-          })
-        } else if (hasMetadata) {
-          // Only metadata found
-          await sql`
-            UPDATE songs
-            SET
-              genres = ${metadataResult.genres}::text[],
-              moods = ${metadataResult.moods}::text[],
-              enrichment_status = 'completed',
-              youtube_status = ${needsYouTube ? 'not_found' : song.youtube_status},
-              updated_at = NOW()
-            WHERE id = ${song.id}::uuid AND user_id = ${userId}
-          `
-          enriched++
-          results.push({
-            id: song.id,
-            status: 'completed',
-            genres: metadataResult.genres,
-            moods: metadataResult.moods
-          })
-        } else if (hasYouTube) {
-          // Only YouTube found
-          await sql`
-            UPDATE songs
-            SET
-              youtube_id = ${youtubeResult.videoId},
-              youtube_status = 'valid',
-              thumbnail = COALESCE(thumbnail, ${youtubeResult.thumbnail}),
-              enrichment_status = ${needsMetadata ? 'failed' : 'completed'},
-              updated_at = NOW()
-            WHERE id = ${song.id}::uuid AND user_id = ${userId}
-          `
-          youtubeLinked++
-          results.push({
-            id: song.id,
-            status: needsMetadata ? 'failed' : 'completed',
-            youtubeId: youtubeResult.videoId
-          })
-        } else {
-          // Nothing found
-          await sql`
-            UPDATE songs
-            SET
-              enrichment_status = ${needsMetadata ? 'failed' : song.enrichment_status},
-              youtube_status = ${needsYouTube ? 'not_found' : song.youtube_status},
-              updated_at = NOW()
-            WHERE id = ${song.id}::uuid AND user_id = ${userId}
-          `
-          failed++
-          results.push({ id: song.id, status: 'failed' })
-        }
+        if (foundTags) enriched++
+        else if (needsMetadata) failed++
+        results.push({
+          id: song.id,
+          status: newEnrichmentStatus,
+          ...(foundTags ? { genres: metadata.genres, moods: metadata.moods } : {}),
+          ...(linkedVideo ? { youtubeId: linkedVideo } : {})
+        })
       }
 
       // Get remaining counts
@@ -175,7 +154,7 @@ export default async (req: Request, context: Context) => {
       `
 
       return jsonResponse({
-        processed: songsToEnrich.length,
+        processed,
         enriched,
         youtubeLinked,
         failed,
@@ -183,6 +162,7 @@ export default async (req: Request, context: Context) => {
           metadata: parseInt(remaining[0]?.metadata_pending || '0'),
           youtube: parseInt(remaining[0]?.youtube_pending || '0')
         },
+        youtubePaused,
         results
       })
     }

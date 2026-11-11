@@ -4,7 +4,7 @@
 import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
-import { searchYouTubeVideo } from './_shared/youtube'
+import { searchYouTubeVideo, youtubeQuotaExceeded } from './_shared/youtube'
 import { sendImportCompletionEmail } from './_shared/resend'
 import { sendPushNotificationToMany, createImportCompletionPayload, type PushSubscription } from './_shared/webpush'
 
@@ -124,10 +124,11 @@ export default async (req: Request, context: Context) => {
               thumbnail = ytResult.thumbnail
               youtubeStatus = 'valid'
             } else {
-              // Fallback to placeholder
+              // Fallback to placeholder. Quota used up: 'pending', so "auto-tag"
+              // (enrich) can still find the video later (was 'not_found' for good)
               const hashInput = `${song.artist}:${song.title}`.toLowerCase()
               youtubeId = `shz${Math.abs(hashCode(hashInput)).toString(36).slice(0, 8)}`
-              youtubeStatus = 'not_found'
+              youtubeStatus = youtubeQuotaExceeded() ? 'pending' : 'not_found'
             }
             await delay(RATE_LIMIT_MS)
           } else if (!youtubeId) {
