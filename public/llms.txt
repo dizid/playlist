@@ -3,10 +3,10 @@
 > TuneCraft (https://tunecraft.music) is a free personal music layer on top of YouTube. It pulls your listening from several places into one library you own (play counts, your own genre and mood tags), builds smart playlists from it, and plays songs on YouTube. It is a companion app, not a player. Made by Dizid (https://dizid.com), Marc de Ruijter.
 
 ## What it does
-- Import: YouTube playlists, a Shazam list (CSV with title and artist; from Shazam's data request at shazam.com/privacy, an old My Shazam CSV or your own) and Google Takeout YouTube watch history (watch-history.html) land in one library. Spotify import is listed as coming soon.
+- Import: YouTube playlists, a Shazam list (CSV with title and artist; from Shazam's data request at shazam.com/privacy, an old My Shazam CSV or your own) and Google Takeout YouTube watch history (watch-history.html; real titles, artists and play counts, YouTube Music plays only unless you choose all videos) land in one library. Spotify import is listed as coming soon.
 - Connections: link a Last.fm or ListenBrainz account and your scrobbles keep syncing in automatically.
 - Tags: give any song a genre and a mood yourself, then filter the whole library by them in Discover. There is no automatic tagging and no song rating.
-- Smart playlists that refill themselves from your play counts: Top 50 (most played), Heavy Rotation (played 3+ times, most recent first) and Fresh Loves (newest songs played 2+ times) are created on your first visit. Plays are counted when you press Play in TuneCraft and from Last.fm or ListenBrainz scrobbles.
+- Smart playlists that refill themselves from your play counts: Top 50 (most played), Heavy Rotation (played 3+ times, most recent first) and Fresh Loves (newest songs played 2+ times) are created on your first visit. Plays are counted when you press Play in TuneCraft, from Last.fm or ListenBrainz scrobbles, and from an imported Google Takeout watch history.
 - Rediscover: surfaces forgotten favourites from your own library.
 - Playback: one click opens the song on YouTube; TuneCraft keeps the data, YouTube plays the music.
 

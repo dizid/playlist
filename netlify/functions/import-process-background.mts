@@ -32,6 +32,27 @@ interface SongPayload {
   channel?: string
   thumbnail?: string
   source?: string
+  playCount?: number    // Takeout: how often the song is in the watch history
+  lastPlayed?: string   // Takeout: ISO date of the newest play
+  firstPlayed?: string  // Takeout: ISO date of the oldest play
+}
+
+// Highest play count one import may set for a song (guards against odd payloads)
+const MAX_IMPORTED_PLAYS = 100000
+
+/** A whole number of plays from the payload, or 0. */
+function importedPlayCount(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? Math.min(value, MAX_IMPORTED_PLAYS)
+    : 0
+}
+
+/** An ISO date between 2005 and tomorrow from the payload, or null. */
+function importedPlayDate(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const time = Date.parse(value)
+  if (!Number.isFinite(time) || time < Date.UTC(2005, 0, 1) || time > Date.now() + 86400000) return null
+  return new Date(time).toISOString()
 }
 
 export default async (req: Request, context: Context) => {
@@ -115,9 +136,17 @@ export default async (req: Request, context: Context) => {
             youtubeStatus = 'not_found'
           }
 
-          // Insert or update song
+          // Plays from a Takeout watch history (0 / null for other imports).
+          // On re-import GREATEST/LEAST keep counts and dates from adding up twice.
+          const playCount = importedPlayCount(song.playCount)
+          const lastPlayed = importedPlayDate(song.lastPlayed)
+          const firstPlayed = importedPlayDate(song.firstPlayed)
+
+          // Insert or update song. A placeholder title ("Video <id>", from older
+          // Takeout imports) never replaces a real one; a real title does
+          // replace a placeholder, which repairs songs from those imports.
           const result = await sql`
-            INSERT INTO songs (user_id, youtube_id, youtube_status, title, artist, channel, thumbnail, source)
+            INSERT INTO songs (user_id, youtube_id, youtube_status, title, artist, channel, thumbnail, source, play_count, last_played, first_played)
             VALUES (
               ${userId},
               ${youtubeId},
@@ -126,10 +155,19 @@ export default async (req: Request, context: Context) => {
               ${song.artist || null},
               ${song.channel || null},
               ${thumbnail},
-              ${song.source || 'import'}
+              ${song.source || 'import'},
+              ${playCount},
+              ${lastPlayed}::timestamptz,
+              ${firstPlayed}::timestamptz
             )
             ON CONFLICT (user_id, youtube_id) DO UPDATE SET
-              title = EXCLUDED.title,
+              title = CASE
+                WHEN EXCLUDED.title = 'Video ' || songs.youtube_id THEN songs.title
+                ELSE EXCLUDED.title
+              END,
+              play_count = GREATEST(COALESCE(songs.play_count, 0), EXCLUDED.play_count),
+              last_played = GREATEST(songs.last_played, EXCLUDED.last_played),
+              first_played = LEAST(songs.first_played, EXCLUDED.first_played),
               artist = COALESCE(EXCLUDED.artist, songs.artist),
               channel = COALESCE(EXCLUDED.channel, songs.channel),
               thumbnail = COALESCE(EXCLUDED.thumbnail, songs.thumbnail),

@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import { useLibraryStore } from '../stores/library'
 import { api } from '../services/api'
 import ConnectionsPanel from '../components/ConnectionsPanel.vue'
+import { parseTakeoutHistory } from '../lib/takeout'
 import {
   isPushSupported,
   getPermissionStatus,
@@ -17,6 +18,8 @@ const library = useLibraryStore()
 
 const activeTab = ref('youtube')
 const isCollectingData = ref(false)
+// Takeout: import only YouTube Music / artist-channel plays (default), or every watched video
+const takeoutMusicOnly = ref(true)
 const isSendingToServer = ref(false)
 const isImporting = computed(() => isCollectingData.value || isSendingToServer.value)
 const importProgress = ref({ current: 0, total: 0, message: '' })
@@ -549,41 +552,59 @@ function handleShazamFile(event) {
 }
 
 function handleTakeoutFile(event) {
-  const file = event.target.files?.[0]
+  const input = event.target
+  const file = input.files?.[0]
   if (!file) return
 
   isCollectingData.value = true
-  importProgress.value = { current: 0, total: 0, message: 'Parsing watch history...' }
+  importProgress.value = { current: 0, total: 0, message: 'Reading watch history...' }
   importResults.value = null
 
   const reader = new FileReader()
   reader.onload = async (e) => {
     try {
-      const html = e.target?.result
-      // Parse YouTube video URLs from the HTML
-      const videoRegex = /watch\?v=([a-zA-Z0-9_-]{11})/g
-      const matches = [...html.matchAll(videoRegex)]
-      const uniqueIds = [...new Set(matches.map(m => m[1]))]
-
-      const collectedSongs = uniqueIds.map(videoId => ({
-        youtubeId: videoId,
-        title: `Video ${videoId}`, // Will be enriched later
-        source: 'takeout'
-      }))
-
+      const html = e.target?.result || ''
+      // Real titles, artists (channel), play counts and play dates per song;
+      // regular videos are skipped unless the user unticked "Only music"
+      const parsed = parseTakeoutHistory(html, { musicOnly: takeoutMusicOnly.value })
       isCollectingData.value = false
 
-      // Submit for background processing
-      await submitBackgroundImport('takeout', collectedSongs)
+      if (parsed.songs.length === 0) {
+        importResults.value = {
+          success: false,
+          message: takeoutMusicOnly.value && parsed.otherVideos > 0
+            ? `No YouTube Music plays found (only ${parsed.otherVideos.toLocaleString()} regular video${parsed.otherVideos === 1 ? '' : 's'}). Untick "Only music" to import those.`
+            : 'No videos found in this file. Pick watch-history.html from your Takeout download.'
+        }
+        return
+      }
 
+      await submitBackgroundImport('takeout', parsed.songs)
+
+      if (importResults.value?.success) {
+        if (parsed.totalSongs > parsed.songs.length) {
+          importResults.value.message += ` (your ${parsed.songs.length.toLocaleString()} most played of ${parsed.totalSongs.toLocaleString()} songs)`
+        }
+        if (takeoutMusicOnly.value && parsed.otherVideos > 0) {
+          importResults.value.message += ` (${parsed.otherVideos.toLocaleString()} regular video${parsed.otherVideos === 1 ? '' : 's'} skipped)`
+        }
+      }
     } catch (error) {
       console.error('Takeout import error:', error)
       importResults.value = {
         success: false,
-        message: error.message || 'Failed to parse watch history'
+        message: error.message || 'Failed to read watch history'
       }
       isCollectingData.value = false
+    } finally {
+      // Lets the same file be picked again (e.g. after unticking "Only music")
+      input.value = ''
     }
+  }
+  reader.onerror = () => {
+    isCollectingData.value = false
+    input.value = ''
+    importResults.value = { success: false, message: "Couldn't read that file. Please try again." }
   }
   reader.readAsText(file)
 }
@@ -871,10 +892,19 @@ function dismissActiveJob() {
         <p>4. Leave History as HTML under "Multiple formats" (the JSON file can't be imported here)</p>
         <p>5. Create the export and download the ZIP</p>
         <p>6. Extract it and upload <code class="bg-zinc-800 px-1 rounded">watch-history.html</code> (in Takeout / YouTube and YouTube Music / history)</p>
+        <p>TuneCraft reads each song's title, artist and how often you played it, so your Top 50 fills up right away.</p>
         <p>
           <a href="/blog/export-youtube-music-history-google-takeout" target="_blank" class="text-indigo-400 hover:text-indigo-300">Step-by-step guide: what the file includes and misses</a>
         </p>
       </div>
+      <label class="flex items-start gap-2 text-sm text-zinc-300 mb-4 cursor-pointer">
+        <input
+          v-model="takeoutMusicOnly"
+          type="checkbox"
+          class="mt-0.5 h-4 w-4 accent-indigo-600"
+        />
+        <span>Only music <span class="text-zinc-500">(YouTube Music plays and artist channels; untick to also import regular videos)</span></span>
+      </label>
       <label class="block">
         <input
           type="file"

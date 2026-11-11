@@ -182,7 +182,7 @@ function goBack() {
         <p class="text-zinc-400 text-sm">
           <template v-if="playlist.type === 'smart' && typeof playlist.rules?.minPlayCount === 'number'">
             Songs land here once you've played them {{ playlist.rules.minPlayCount }} or more times. Plays count when you
-            press Play in TuneCraft, and from Last.fm or ListenBrainz once you connect them on the Import page.
+            press Play in TuneCraft, from a Google Takeout history import, and from Last.fm or ListenBrainz once you connect them on the Import page.
           </template>
           <template v-else-if="playlist.type === 'smart'">
             No songs match these playlist rules yet. Import more music to fill it.
