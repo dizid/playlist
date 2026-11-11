@@ -33,8 +33,10 @@ const activeRules = computed(() => {
     chips.push({ label: 'Plays', value: `>= ${rules.minPlayCount}` })
   }
   if (rules.sortBy) {
+    // Readable names for the database columns the rules sort by
+    const sortNames = { play_count: 'plays', last_played: 'last played', created_at: 'date added', popularity: 'popularity' }
     const dir = rules.sortOrder === 'asc' ? 'ascending' : 'descending'
-    chips.push({ label: 'Sort', value: `${rules.sortBy} ${dir}` })
+    chips.push({ label: 'Sort', value: `${sortNames[rules.sortBy] || rules.sortBy} ${dir}` })
   }
   if (rules.limit) {
     chips.push({ label: 'Limit', value: `${rules.limit} songs` })
@@ -178,8 +180,12 @@ function goBack() {
         </svg>
         <h3 class="text-xl font-semibold text-white mb-2">No Songs Found</h3>
         <p class="text-zinc-400 text-sm">
-          <template v-if="playlist.type === 'smart'">
-            No songs match these playlist rules yet. Import more music or adjust the rules.
+          <template v-if="playlist.type === 'smart' && typeof playlist.rules?.minPlayCount === 'number'">
+            Songs land here once you've played them {{ playlist.rules.minPlayCount }} or more times. Plays count when you
+            press Play in TuneCraft, and from Last.fm or ListenBrainz once you connect them on the Import page.
+          </template>
+          <template v-else-if="playlist.type === 'smart'">
+            No songs match these playlist rules yet. Import more music to fill it.
           </template>
           <template v-else>
             This playlist is empty. Add songs from your library.

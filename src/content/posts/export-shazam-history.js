@@ -79,7 +79,7 @@ export default {
 <li>If you kept a CSV from the old My Shazam page, it still works.</li>
 <li>For a short list, make your own: a spreadsheet with a Title column and an Artist column, saved as CSV.</li>
 </ul>
-<p>After the import, TuneCraft tags genres and moods, lets you rate each song, and keeps smart playlists up to date. "Play" opens the song on YouTube. If you also listen on YouTube Music, you can add that history too: see <a href="/blog/export-youtube-music-history-google-takeout">how to export your YouTube Music history with Google Takeout</a>.</p>
+<p>After the import you can tag each song with a genre and a mood and filter by them in Discover, and smart playlists such as Top 50 fill up from your play counts. "Play" opens the song on YouTube. If you also listen on YouTube Music, you can add that history too: see <a href="/blog/export-youtube-music-history-google-takeout">how to export your YouTube Music history with Google Takeout</a>.</p>
 
 <h2>Keep a copy from now on</h2>
 <p>Since there is no longer a download button you can press any time, the easiest habit is to turn on My Shazam Tracks now. Then your new Shazams land in a playlist you control, and a data request at shazam.com/privacy covers the full history whenever you need it.</p>

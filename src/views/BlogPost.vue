@@ -43,7 +43,7 @@ onMounted(() => {
     <section class="mt-6 bg-zinc-900 border border-zinc-800 rounded-xl p-6">
       <p class="text-white mb-3">
         TuneCraft is a free music library on top of YouTube: bring in your YouTube playlists, Shazam list, Takeout
-        history or Last.fm / ListenBrainz scrobbles, rate what you love, and get smart playlists that keep themselves up to date.
+        history or Last.fm / ListenBrainz scrobbles, tag songs your way, and get smart playlists that refill themselves from your plays.
       </p>
       <a
         href="/"

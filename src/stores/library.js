@@ -152,6 +152,60 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
+  // The three smart playlists the landing page promises. Rules use what the
+  // database really has (play counts, dates); there are no song ratings.
+  // Listed oldest first: the API returns playlists newest first, so Top 50
+  // ends up at the top.
+  const DEFAULT_SMART_PLAYLISTS = [
+    { name: 'Fresh Loves', type: 'smart', rules: { sortBy: 'created_at', sortOrder: 'desc', minPlayCount: 2, limit: 50 } },
+    { name: 'Heavy Rotation', type: 'smart', rules: { sortBy: 'last_played', sortOrder: 'desc', minPlayCount: 3, limit: 50 } },
+    { name: 'Top 50', type: 'smart', rules: { sortBy: 'play_count', sortOrder: 'desc', limit: 50 } }
+  ]
+
+  /**
+   * Creates the default smart playlists once, for a user who has songs but no
+   * playlists yet. Nothing in the app created playlists before, so every
+   * Dashboard said "Playlists 0". Remembered per user on this device, so
+   * someone who deletes them on purpose doesn't get them back here.
+   */
+  // One run at a time: leaving and reopening the Dashboard quickly must not
+  // start a second run that also sees "no playlists" and makes a second set.
+  let defaultPlaylistsRun = null
+
+  function ensureDefaultPlaylists(userKey) {
+    if (!defaultPlaylistsRun) {
+      defaultPlaylistsRun = createDefaultPlaylists(userKey).finally(() => {
+        defaultPlaylistsRun = null
+      })
+    }
+    return defaultPlaylistsRun
+  }
+
+  async function createDefaultPlaylists(userKey) {
+    if (!userKey || playlists.value.length > 0 || songCount.value === 0) return
+    const flag = `tunecraft:default-playlists:${userKey}`
+    try {
+      if (window.localStorage.getItem(flag)) return
+    } catch {
+      // storage blocked: still create them (the playlist check below stops repeats)
+    }
+    // Ask the server again: a failed earlier fetch also leaves the list empty,
+    // and that must not create a second set.
+    const existing = await api.getPlaylists()
+    if (!Array.isArray(existing) || existing.length > 0) {
+      if (Array.isArray(existing)) playlists.value = existing
+      return
+    }
+    for (const playlist of DEFAULT_SMART_PLAYLISTS) {
+      await createPlaylist(playlist)
+    }
+    try {
+      window.localStorage.setItem(flag, '1')
+    } catch {
+      // storage blocked: nothing to remember
+    }
+  }
+
   async function deletePlaylist(playlistId) {
     try {
       await api.deletePlaylist(playlistId)
@@ -231,6 +285,7 @@ export const useLibraryStore = defineStore('library', () => {
     incrementPlayCount,
     deleteSong,
     createPlaylist,
+    ensureDefaultPlaylists,
     deletePlaylist,
     updateSongTags,
     enrichSongs,

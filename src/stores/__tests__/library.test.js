@@ -8,6 +8,7 @@ vi.mock('../../services/api', () => ({
     getSongs: vi.fn(),
     addSong: vi.fn(),
     getPlaylists: vi.fn(),
+    createPlaylist: vi.fn(),
     incrementPlayCount: vi.fn()
   }
 }))
@@ -178,6 +179,60 @@ describe('useLibraryStore', () => {
 
       expect(store.songs[0].play_count).toBe(5)
       expect(api.incrementPlayCount).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('ensureDefaultPlaylists', () => {
+    beforeEach(() => {
+      window.localStorage.clear()
+      let n = 0
+      api.createPlaylist.mockImplementation(async (p) => ({ id: `p${++n}`, ...p }))
+    })
+
+    it('creates Top 50, Heavy Rotation and Fresh Loves for a user with songs and no playlists', async () => {
+      store.songs = [{ id: 's1', title: 'Song' }]
+      api.getPlaylists.mockResolvedValue([])
+
+      await store.ensureDefaultPlaylists('user-1')
+
+      expect(api.createPlaylist).toHaveBeenCalledTimes(3)
+      expect(store.playlists.map(p => p.name)).toEqual(['Top 50', 'Heavy Rotation', 'Fresh Loves'])
+      // No rating or popularity rules: those values are never filled in
+      for (const [p] of api.createPlaylist.mock.calls) {
+        expect(p.type).toBe('smart')
+        expect(['play_count', 'last_played', 'created_at']).toContain(p.rules.sortBy)
+        expect(p.rules.minPopularity).toBeUndefined()
+      }
+    })
+
+    it('makes only one set when the Dashboard opens twice quickly', async () => {
+      store.songs = [{ id: 's1', title: 'Song' }]
+      api.getPlaylists.mockResolvedValue([])
+
+      await Promise.all([store.ensureDefaultPlaylists('user-1'), store.ensureDefaultPlaylists('user-1')])
+
+      expect(api.createPlaylist).toHaveBeenCalledTimes(3)
+    })
+
+    it('creates nothing when the server already has playlists (failed earlier fetch)', async () => {
+      store.songs = [{ id: 's1', title: 'Song' }]
+      api.getPlaylists.mockResolvedValue([{ id: 'x', name: 'Mine' }])
+
+      await store.ensureDefaultPlaylists('user-1')
+
+      expect(api.createPlaylist).not.toHaveBeenCalled()
+      expect(store.playlists).toEqual([{ id: 'x', name: 'Mine' }])
+    })
+
+    it('does nothing for an empty library or after a set was made on this device', async () => {
+      api.getPlaylists.mockResolvedValue([])
+      await store.ensureDefaultPlaylists('user-1')
+      expect(api.createPlaylist).not.toHaveBeenCalled()
+
+      store.songs = [{ id: 's1', title: 'Song' }]
+      window.localStorage.setItem('tunecraft:default-playlists:user-1', '1')
+      await store.ensureDefaultPlaylists('user-1')
+      expect(api.createPlaylist).not.toHaveBeenCalled()
     })
   })
 })

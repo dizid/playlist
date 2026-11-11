@@ -47,7 +47,7 @@ export default {
 <p>Keep the settings above in mind. Videos watched while watch history is paused do not show in your history, and auto-delete removes older activity, so check them before you rely on your history for stats.</p>
 
 <h2>How TuneCraft uses this</h2>
-<p>TuneCraft is a free companion app on top of YouTube and YouTube Music. You bring in your history from a Google Takeout export, Shazam, Last.fm or ListenBrainz, rate songs as loved, liked, neutral, disliked or blocked, and it builds rule-based smart playlists such as Top 50, Fresh Loves and Heavy Rotation from your own play counts and ratings. Clicking Play opens YouTube. It does not replace the history YouTube Music keeps, it just puts it to more use.</p>
+<p>TuneCraft is a free companion app on top of YouTube and YouTube Music. You bring in your history from a Google Takeout export, Shazam, Last.fm or ListenBrainz, tag songs with your own genres and moods, and it builds rule-based smart playlists, Top 50, Heavy Rotation and Fresh Loves, from your own play counts (each Play in TuneCraft and every Last.fm or ListenBrainz scrobble counts). Clicking Play opens YouTube. It does not replace the history YouTube Music keeps, it just puts it to more use.</p>
 `,
   sources: [
     { label: 'YouTube Music Help: Customize your music & podcasts (History, Remove from history, likes)', url: 'https://support.google.com/youtubemusic/answer/6313542?hl=en' },

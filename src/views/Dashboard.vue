@@ -12,6 +12,12 @@ onMounted(async () => {
     library.fetchPlaylists(),
     library.fetchEnrichmentStatus()
   ])
+  // First visit with songs: create Top 50 / Heavy Rotation / Fresh Loves.
+  try {
+    await library.ensureDefaultPlaylists(auth.user?.id || auth.userEmail)
+  } catch {
+    // Not critical: the Dashboard works without them; the next visit retries.
+  }
 })
 
 // --- Stats ---
@@ -56,11 +62,17 @@ const hasInsights = computed(() =>
 )
 
 // --- Quick actions ---
-const quickActions = [
-  { label: 'Import Music', path: '/import' },
-  { label: 'View Library', path: '/library' },
-  { label: 'Create Playlist', path: '/library' }
-]
+// "Create Playlist" used to open the Library, which can't create one; it now
+// opens the user's Top 50 smart playlist once it exists.
+const quickActions = computed(() => {
+  const actions = [
+    { label: 'Import Music', path: '/import' },
+    { label: 'View Library', path: '/library' }
+  ]
+  const top50 = library.playlists.find(p => p.name === 'Top 50')
+  if (top50) actions.push({ label: 'Your Top 50', path: `/playlist/${top50.id}` })
+  return actions
+})
 </script>
 
 <template>

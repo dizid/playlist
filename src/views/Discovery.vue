@@ -137,7 +137,7 @@ function clearFilters() {
       <span class="text-5xl mb-4 block">🏷️</span>
       <h3 class="text-xl font-semibold text-white mb-2">No songs tagged yet</h3>
       <p class="text-zinc-400 mb-4">
-        Re-import your music to enrich with genre and mood data, or manually tag songs in your library.
+        Use "+ add tags" on any song in your Library to give it a genre and a mood, and it shows up here.
       </p>
       <router-link
         to="/library"

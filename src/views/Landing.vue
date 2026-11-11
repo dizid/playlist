@@ -159,7 +159,7 @@ onMounted(async () => {
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">Organize</h3>
-            <p class="text-sm text-zinc-400">Auto-tag genres and moods. Smart playlists build themselves</p>
+            <p class="text-sm text-zinc-400">Tag genres and moods your way. Smart playlists build themselves from your plays</p>
           </div>
 
           <!-- Step 3: Play -->
@@ -209,7 +209,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Auto-enrichment -->
+          <!-- Genre and mood tags (set by the user; there is no automatic tagging or rating) -->
           <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 animate-fade-in-up animation-delay-3">
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 rounded-lg bg-indigo-600/15 flex items-center justify-center shrink-0">
@@ -218,12 +218,12 @@ onMounted(async () => {
                 </svg>
               </div>
               <div>
-                <h3 class="font-semibold text-white mb-1">Auto-enrichment</h3>
-                <p class="text-sm text-zinc-400 mb-3">Genres and moods tagged automatically. Rate songs as loved, liked, or skip -- your taste profile builds itself.</p>
+                <h3 class="font-semibold text-white mb-1">Your own tags</h3>
+                <p class="text-sm text-zinc-400 mb-3">Give any song a genre and a mood in a few taps, then filter your whole library by them in Discover.</p>
                 <div class="flex gap-3 text-sm">
-                  <span class="text-red-500">Loved</span>
-                  <span class="text-green-500">Liked</span>
-                  <span class="text-zinc-500">Skip</span>
+                  <span class="text-indigo-400">Genre</span>
+                  <span class="text-violet-400">Mood</span>
+                  <span class="text-zinc-500">Discover</span>
                 </div>
               </div>
             </div>
@@ -239,7 +239,7 @@ onMounted(async () => {
               </div>
               <div>
                 <h3 class="font-semibold text-white mb-1">Playlists that think</h3>
-                <p class="text-sm text-zinc-400 mb-3">Auto-generated smart playlists that update as your taste evolves. No more manual sorting.</p>
+                <p class="text-sm text-zinc-400 mb-3">Three smart playlists are made for you and refill themselves from your play counts. No manual sorting.</p>
                 <div class="flex flex-wrap gap-2">
                   <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Top 50</span>
                   <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Heavy Rotation</span>

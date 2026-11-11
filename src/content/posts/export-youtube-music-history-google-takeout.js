@@ -77,7 +77,7 @@ export default {
 <li><strong>Just read it.</strong> Open watch-history.html in a browser and search it for an artist or a song you half remember.</li>
 <li><strong>Analyse it.</strong> The JSON version loads into scripts or a spreadsheet tool, so you can count your top channels or see how your listening changed over the years.</li>
 <li><strong>Turn it into a scrobble history.</strong> ListenBrainz's "Submitting data" page lists community scripts (ytm-extractor and YTMusic2listenbrainz.py) that send your YouTube Music watch history to ListenBrainz. If you're choosing between scrobble services, see <a href="/blog/lastfm-vs-listenbrainz">Last.fm vs ListenBrainz in 2026</a>.</li>
-<li><strong>Build a music library from it.</strong> TuneCraft is a free app that imports watch-history.html, tags genres and moods, lets you rate songs, and keeps smart playlists such as Top 50 and Heavy Rotation up to date. "Play" opens the song on YouTube.</li>
+<li><strong>Build a music library from it.</strong> TuneCraft is a free app that imports watch-history.html into one library where you tag songs with your own genres and moods, and smart playlists such as Top 50 and Heavy Rotation fill up from the plays it counts. "Play" opens the song on YouTube.</li>
 <li><strong>Keep a backup.</strong> Scheduled exports give you a fresh copy every 2 months for a year.</li>
 </ul>
 <p>Keep in mind that a Takeout file is a snapshot. If you want your listening tracked from now on, a scrobbler is the better tool: Last.fm's own help suggests the Web Scrobbler browser extension for YouTube and YouTube Music. Shazam users can get their list out too; see <a href="/blog/export-shazam-history">how to export your Shazam history</a>.</p>
