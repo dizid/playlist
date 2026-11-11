@@ -210,6 +210,9 @@ async function importYouTubePlaylists() {
     const playlists = playlistsData.items || []
 
     let totalNonMusic = 0
+    // Playlists (or the rest of one) that YouTube wouldn't return; reported
+    // at the end instead of being skipped in silence.
+    let unreadablePlaylists = 0
 
     // Process each playlist
     for (let i = 0; i < playlists.length; i++) {
@@ -235,7 +238,16 @@ async function importYouTubePlaylists() {
           headers: { Authorization: `Bearer ${auth.youtubeToken}` }
         })
 
-        if (!itemsResponse.ok) continue
+        // `continue` here used to retry the same page forever (a do...while
+        // re-checks the unchanged nextPageToken) when a later page failed.
+        if (!itemsResponse.ok) {
+          if (itemsResponse.status === 401) {
+            auth.disconnectYouTube()
+            throw new Error('YouTube token expired. Please reconnect.')
+          }
+          unreadablePlaylists++
+          break
+        }
 
         const itemsData = await itemsResponse.json()
         const items = itemsData.items || []
@@ -319,6 +331,9 @@ async function importYouTubePlaylists() {
 
     if (totalNonMusic > 0 && importResults.value?.success) {
       importResults.value.message += ` (${totalNonMusic} non-music videos filtered)`
+    }
+    if (unreadablePlaylists > 0 && importResults.value) {
+      importResults.value.message += ` (${unreadablePlaylists} playlist${unreadablePlaylists === 1 ? '' : 's'} couldn't be read fully from YouTube; try again later)`
     }
 
   } catch (error) {

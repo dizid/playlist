@@ -88,17 +88,32 @@ export default async (req: Request, context: Context) => {
       const backgroundUrl = new URL(req.url)
       backgroundUrl.pathname = '/.netlify/functions/import-process-background'
 
-      // Fire and forget - don't await
-      fetch(backgroundUrl.toString(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': req.headers.get('Authorization') || ''
-        },
-        body: JSON.stringify({ jobId: job.id })
-      }).catch(err => {
+      // Awaited: a background function answers 202 at once, so this costs
+      // little. Fire-and-forget could be dropped when this function returned
+      // (Netlify only keeps work alive after the response via waitUntil),
+      // leaving the job 'pending' forever. If it can't start, fail the job
+      // so the Import page isn't locked behind it.
+      try {
+        const triggerResponse = await fetch(backgroundUrl.toString(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({ jobId: job.id })
+        })
+        if (!triggerResponse.ok) {
+          throw new Error(`background function answered ${triggerResponse.status}`)
+        }
+      } catch (err) {
         console.error('Failed to trigger background processing:', err)
-      })
+        await sql`
+          UPDATE import_jobs
+          SET status = 'failed', error_message = 'The import could not start. Please try again.'
+          WHERE id = ${job.id}::uuid AND user_id = ${userId}
+        `
+        return errorResponse('The import could not start. Please try again.', 502)
+      }
 
       return jsonResponse({
         jobId: job.id,
@@ -144,6 +159,18 @@ export default async (req: Request, context: Context) => {
 
     // GET /api/import/active - Get active import job for user
     if (req.method === 'GET' && url.pathname === '/api/import/active') {
+      // A job still pending/processing 30+ minutes after it was created is
+      // dead (background functions stop at 15 minutes; POST already ignores
+      // such jobs). Mark it failed: returning it as active disabled every
+      // import button forever, with no way to dismiss it.
+      await sql`
+        UPDATE import_jobs
+        SET status = 'failed', error_message = 'This import stopped before it finished. Please start it again.'
+        WHERE user_id = ${userId}
+          AND status IN ('pending', 'processing')
+          AND created_at <= NOW() - INTERVAL '30 minutes'
+      `
+
       const jobs = await sql`
         SELECT
           id,

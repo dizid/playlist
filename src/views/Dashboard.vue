@@ -15,12 +15,14 @@ onMounted(async () => {
 })
 
 // --- Stats ---
-const totalPlays = computed(() =>
-  library.songs.reduce((sum, s) => sum + (s.play_count || 0), 0)
-)
+// Summed by the server over the whole library (the loaded page holds at most
+// 200 songs, so summing those undercounted).
+const totalPlays = computed(() => library.totalPlays)
 
-const enrichedCount = computed(() => library.enrichmentStatus.completed || 0)
-const totalSongCount = computed(() => library.enrichmentStatus.total || library.songs.length)
+// /api/enrich/status nests the counts under `metadata` (this read the top
+// level, so "Enriched" always said 0).
+const enrichedCount = computed(() => library.enrichmentStatus.metadata?.completed || 0)
+const totalSongCount = computed(() => library.enrichmentStatus.total || library.songCount)
 
 const stats = computed(() => [
   { label: 'Songs', value: library.songCount, color: 'text-indigo-400' },
@@ -43,6 +45,8 @@ const songsWithoutYouTube = computed(() =>
   library.songs.filter(s => s.youtube_id?.startsWith('shz')).length
 )
 
+// Stays 0 (hint hidden) on purpose: the "Enrich" link goes to Discover, which
+// has no way to start enrichment any more, so the hint would be a dead end.
 const pendingEnrichment = computed(() =>
   library.enrichmentStatus.pending || 0
 )

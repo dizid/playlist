@@ -7,7 +7,8 @@ vi.mock('../../services/api', () => ({
   api: {
     getSongs: vi.fn(),
     addSong: vi.fn(),
-    getPlaylists: vi.fn()
+    getPlaylists: vi.fn(),
+    incrementPlayCount: vi.fn()
   }
 }))
 
@@ -148,6 +149,35 @@ describe('useLibraryStore', () => {
 
       expect(store.error).toBe('Fetch failed')
       expect(store.isLoading).toBe(false)
+    })
+  })
+  // Audit 2026-11-12 (T-0462): counts over the whole library, one play per tap.
+  describe('library totals and plays', () => {
+    it('songCount is the server total, not the size of the loaded page', async () => {
+      api.getSongs.mockResolvedValue({
+        songs: [{ id: '1' }, { id: '2' }],
+        pagination: { page: 1, limit: 200, total: 1234, totalPages: 7 },
+        totalPlays: 5678
+      })
+
+      await store.fetchSongs()
+
+      expect(store.songCount).toBe(1234)
+      expect(store.totalPlays).toBe(5678)
+    })
+
+    it('songCount falls back to the loaded songs before a count is known', () => {
+      store.songs = [{ id: '1' }, { id: '2' }, { id: '3' }]
+      expect(store.songCount).toBe(3)
+    })
+
+    it('incrementPlayCount only updates the screen (the logged play already counted it)', () => {
+      store.songs = [{ id: 'a', play_count: 4 }]
+
+      store.incrementPlayCount('a')
+
+      expect(store.songs[0].play_count).toBe(5)
+      expect(api.incrementPlayCount).not.toHaveBeenCalled()
     })
   })
 })

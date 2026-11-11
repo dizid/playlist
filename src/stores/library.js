@@ -9,11 +9,22 @@ export const useLibraryStore = defineStore('library', () => {
   const history = ref([])
   const isLoading = ref(false)
   const error = ref(null)
-  const enrichmentStatus = ref({ pending: 0, completed: 0, failed: 0, manual: 0, total: 0 })
+  // Same shape as GET /api/enrich/status: per-kind counts, plus the total.
+  const enrichmentStatus = ref({
+    metadata: { pending: 0, completed: 0, failed: 0, manual: 0 },
+    youtube: { valid: 0, pending: 0, not_found: 0 },
+    total: 0
+  })
   const pagination = ref({ page: 1, limit: 50, total: 0, totalPages: 0 })
+  // Plays over the whole library (the server sums them); the loaded page
+  // holds at most 200 songs.
+  const totalPlays = ref(0)
 
   // Getters
-  const songCount = computed(() => songs.value.length)
+  // The library's real size from the server's count; the loaded songs are
+  // one page of at most 200, so counting them said "200 songs" for anyone
+  // with a bigger library.
+  const songCount = computed(() => Math.max(pagination.value.total || 0, songs.value.length))
   const topSongs = computed(() =>
     [...songs.value]
       .sort((a, b) => b.popularity - a.popularity)
@@ -43,6 +54,7 @@ export const useLibraryStore = defineStore('library', () => {
       const result = await api.getSongs({}, { page, limit })
       songs.value = append ? [...songs.value, ...result.songs] : result.songs
       pagination.value = result.pagination
+      if (typeof result.totalPlays === 'number') totalPlays.value = result.totalPlays
     } catch (e) {
       error.value = e.message
     } finally {
@@ -108,20 +120,14 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
-  async function incrementPlayCount(songId) {
+  // Screen-only update after a play was logged. POST /api/history (api.logPlay)
+  // already adds 1 to play_count in the database; this used to also PATCH
+  // the song with incrementPlayCount, so every Play tap counted twice.
+  function incrementPlayCount(songId) {
     const song = songs.value.find(s => s.id === songId)
     if (song) {
       song.play_count = (song.play_count || 0) + 1
       song.last_played = new Date().toISOString()
-    }
-    try {
-      await api.incrementPlayCount(songId)
-    } catch (e) {
-      // Revert optimistic update
-      if (song) {
-        song.play_count = Math.max(0, (song.play_count || 1) - 1)
-      }
-      error.value = e.message
     }
   }
 
@@ -210,6 +216,7 @@ export const useLibraryStore = defineStore('library', () => {
     error,
     enrichmentStatus,
     pagination,
+    totalPlays,
     // Getters
     songCount,
     topSongs,

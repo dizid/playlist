@@ -15,7 +15,7 @@ function getResendApiKey(): string {
 function getFromEmail(): string {
   return (typeof Netlify !== 'undefined' && Netlify.env?.get('RESEND_FROM_EMAIL'))
     || process.env.RESEND_FROM_EMAIL
-    || 'notifications@tunecraft.com'
+    || 'notifications@tunecraft.music' // our own domain; tunecraft.com belongs to someone else
 }
 
 export interface ImportCompletionEmail {
@@ -89,7 +89,7 @@ export async function sendImportCompletionEmail(data: ImportCompletionEmail): Pr
       </div>
     </div>
 
-    <a href="https://tunecraft.com/library" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; margin-top: 16px;">
+    <a href="https://tunecraft.music/library" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; margin-top: 16px;">
       View Your Library
     </a>
 

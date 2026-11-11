@@ -30,50 +30,56 @@ export default async (req: Request, context: Context) => {
       const genres = genresParam ? genresParam.split(',').filter(g => g) : null
       const moods = moodsParam ? moodsParam.split(',').filter(m => m) : null
 
-      // Get total count and paginated songs
+      // Get total count and paginated songs. The ORDER BY ends in unique
+      // columns: most songs tie on popularity (never computed) and play_count
+      // (0 after an import), and without a fixed order 'Load more' could
+      // repeat some songs and skip others.
       let songs
       let countResult
       if (genres && moods) {
         countResult = await sql`
-          SELECT COUNT(*)::int AS total FROM songs
+          SELECT COUNT(*)::int AS total, COALESCE(SUM(play_count), 0)::int AS total_plays FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[] AND moods && ${moods}::text[]`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[] AND moods && ${moods}::text[]
-          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          ORDER BY popularity DESC NULLS LAST, play_count DESC, created_at DESC, id
           LIMIT ${limit} OFFSET ${offset}`
       } else if (genres) {
         countResult = await sql`
-          SELECT COUNT(*)::int AS total FROM songs
+          SELECT COUNT(*)::int AS total, COALESCE(SUM(play_count), 0)::int AS total_plays FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[]`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[]
-          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          ORDER BY popularity DESC NULLS LAST, play_count DESC, created_at DESC, id
           LIMIT ${limit} OFFSET ${offset}`
       } else if (moods) {
         countResult = await sql`
-          SELECT COUNT(*)::int AS total FROM songs
+          SELECT COUNT(*)::int AS total, COALESCE(SUM(play_count), 0)::int AS total_plays FROM songs
           WHERE user_id = ${userId} AND moods && ${moods}::text[]`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId} AND moods && ${moods}::text[]
-          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          ORDER BY popularity DESC NULLS LAST, play_count DESC, created_at DESC, id
           LIMIT ${limit} OFFSET ${offset}`
       } else {
         countResult = await sql`
-          SELECT COUNT(*)::int AS total FROM songs
+          SELECT COUNT(*)::int AS total, COALESCE(SUM(play_count), 0)::int AS total_plays FROM songs
           WHERE user_id = ${userId}`
         songs = await sql`
           SELECT * FROM songs
           WHERE user_id = ${userId}
-          ORDER BY popularity DESC NULLS LAST, play_count DESC
+          ORDER BY popularity DESC NULLS LAST, play_count DESC, created_at DESC, id
           LIMIT ${limit} OFFSET ${offset}`
       }
 
       const total = countResult[0].total
       return jsonResponse({
         songs,
+        // Over all matching songs, not just this page (the Dashboard showed
+        // the sum of the first 200 songs only).
+        totalPlays: countResult[0].total_plays,
         pagination: {
           page,
           limit,
