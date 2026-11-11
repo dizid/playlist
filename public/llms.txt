@@ -23,6 +23,7 @@ Step-by-step guides, checked against each service's own help pages (index: https
 - [Last.fm vs ListenBrainz in 2026: Where to Keep Your Scrobbles](https://tunecraft.music/blog/lastfm-vs-listenbrainz)
 - [Where YouTube Music Shows Your Listening History and Stats](https://tunecraft.music/blog/youtube-music-listening-history-stats)
 - [YouTube Music Mixes and Playlists: What You Can and Cannot Set](https://tunecraft.music/blog/youtube-music-smart-playlists-mixes)
+- [Spotify to YouTube Music (and Back): What Transfers in 2026](https://tunecraft.music/blog/spotify-youtube-music-transfer)
 
 ## Who it is for
 - People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.
