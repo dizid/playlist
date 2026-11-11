@@ -144,7 +144,7 @@ onMounted(async () => {
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">Import</h3>
-            <p class="text-sm text-zinc-400">Pull in your YouTube playlists, Shazam history, or Spotify library</p>
+            <p class="text-sm text-zinc-400">Pull in your YouTube playlists, Shazam history, or your Spotify plays via Last.fm</p>
           </div>
 
           <!-- Step 2: Organize -->
@@ -198,12 +198,12 @@ onMounted(async () => {
               </div>
               <div>
                 <h3 class="font-semibold text-white mb-1">Import from 4 sources</h3>
-                <p class="text-sm text-zinc-400 mb-3">YouTube playlists, Shazam history, Google Takeout, and Spotify exports all land in one library.</p>
+                <p class="text-sm text-zinc-400 mb-3">YouTube playlists, Shazam history and Google Takeout files land in one library. Connect Last.fm or ListenBrainz and your Spotify plays keep syncing in.</p>
                 <div class="flex flex-wrap gap-2">
                   <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">YouTube</span>
                   <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Shazam</span>
                   <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Google Takeout</span>
-                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Spotify</span>
+                  <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">Last.fm / ListenBrainz</span>
                 </div>
               </div>
             </div>
