@@ -107,6 +107,7 @@ export default async (req: Request, context: Context) => {
     // Process songs in batches
     for (let i = 0; i < songs.length; i += DB_BATCH_SIZE) {
       const batch = songs.slice(i, i + DB_BATCH_SIZE)
+      const batchInsertedIds: string[] = [] // new rows in this batch (cleanup if the job is deleted)
 
       for (const song of batch) {
         try {
@@ -182,6 +183,7 @@ export default async (req: Request, context: Context) => {
           // xmax = 0 means it was an INSERT, not UPDATE
           if (result[0]?.inserted) {
             insertedItems++
+            batchInsertedIds.push(youtubeId)
           } else {
             skippedItems++
           }
@@ -193,8 +195,10 @@ export default async (req: Request, context: Context) => {
         processedItems++
       }
 
-      // Update progress after each batch
-      await sql`
+      // Update progress after each batch. No row = the job was removed by
+      // "Delete all data": stop, and remove the songs this batch added, so a
+      // deleted library doesn't fill up again from an import still running.
+      const progress = await sql`
         UPDATE import_jobs
         SET
           processed_items = ${processedItems},
@@ -202,7 +206,15 @@ export default async (req: Request, context: Context) => {
           skipped_items = ${skippedItems},
           updated_at = NOW()
         WHERE id = ${jobId}::uuid
+        RETURNING id
       `
+      if (progress.length === 0) {
+        if (batchInsertedIds.length > 0) {
+          await sql`DELETE FROM songs WHERE user_id = ${userId} AND youtube_id = ANY(${batchInsertedIds}::text[])`
+        }
+        console.log(`Import job ${jobId} stopped: the job was deleted`)
+        return jsonResponse({ status: 'cancelled', processedItems })
+      }
 
       console.log(`Import job ${jobId}: processed ${processedItems}/${songs.length}`)
     }

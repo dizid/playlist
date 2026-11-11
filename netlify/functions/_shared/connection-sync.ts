@@ -174,6 +174,9 @@ export async function savePlays(sql: Sql, userId: string, provider: Provider, pl
  * Run one sync pass for a connection until `deadline` (ms timestamp).
  * Never throws for provider problems: they are stored on the connection row.
  */
+/** The connection was removed (disconnect or "Delete all data") while a run was going. */
+class ConnectionGoneError extends Error {}
+
 export async function runConnectionSync(sql: Sql, connectionId: string, userId: string, deadline: number): Promise<SyncOutcome> {
   // Take the run lock (one run per connection at a time)
   const claimed = await sql`
@@ -200,6 +203,14 @@ export async function runConnectionSync(sql: Sql, connectionId: string, userId: 
   const timeLeft = () => Date.now() < deadline
   const pause = async () => { if (requestCount++ > 0) await sleep(client.requestDelayMs) }
 
+  // Save one page, but only while the connection still exists: after a disconnect or
+  // "Delete all data" a run that is still going must not put songs and plays back.
+  const savePage = async (plays: Play[]) => {
+    const exists = await sql`SELECT 1 FROM connections WHERE id = ${connectionId}::uuid AND user_id = ${userId}`
+    if (exists.length === 0) throw new ConnectionGoneError()
+    return savePlays(sql, userId, connection.provider, plays)
+  }
+
   // Persist cursors after every page so a timeout never loses progress
   const saveProgress = async (inserted: number) => {
     importedPlays += inserted
@@ -223,7 +234,7 @@ export async function runConnectionSync(sql: Sql, connectionId: string, userId: 
     if (newestTs === null) {
       await pause()
       const { plays, hasMore } = await client.getPlaysAtOrBefore(username, null)
-      const inserted = await savePlays(sql, userId, connection.provider, plays)
+      const inserted = await savePage(plays)
       if (plays.length > 0) {
         newestTs = Math.max(...plays.map(p => p.playedAt))
         oldestTs = Math.min(...plays.map(p => p.playedAt))
@@ -238,7 +249,7 @@ export async function runConnectionSync(sql: Sql, connectionId: string, userId: 
       await pause()
       const previousNewest = newestTs!
       const { plays, hasMore } = await client.getPlaysAtOrAfter(username, previousNewest)
-      const inserted = await savePlays(sql, userId, connection.provider, plays)
+      const inserted = await savePage(plays)
       const pageMax = plays.length ? Math.max(...plays.map(p => p.playedAt)) : previousNewest
       if (pageMax > previousNewest) {
         newestTs = pageMax
@@ -254,7 +265,7 @@ export async function runConnectionSync(sql: Sql, connectionId: string, userId: 
       await pause()
       const previousOldest = oldestTs!
       const { plays, hasMore } = await client.getPlaysAtOrBefore(username, previousOldest)
-      const inserted = await savePlays(sql, userId, connection.provider, plays)
+      const inserted = await savePage(plays)
       const pageMin = plays.length ? Math.min(...plays.map(p => p.playedAt)) : previousOldest
       if (pageMin < previousOldest) {
         oldestTs = pageMin
@@ -278,6 +289,10 @@ export async function runConnectionSync(sql: Sql, connectionId: string, userId: 
       connection: finished[0] as ConnectionRow
     }
   } catch (error) {
+    // Removed mid-run: nothing left to update, just stop
+    if (error instanceof ConnectionGoneError) {
+      return { busy: false, importedPlays, complete: false, connection: null }
+    }
     // Problems the user can fix (unknown user, private profile) block further syncs until they act;
     // anything else (timeouts, rate limits, outages) keeps the connection active for the next run
     const userFacing = error instanceof ProviderError && error.userFacing

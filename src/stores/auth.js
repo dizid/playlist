@@ -112,14 +112,22 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  // Handle 401 from API calls — clear session and redirect to login
-  function handleUnauthorized() {
+  // Handle 401 from API calls: sign out and go to the landing page.
+  // Signing out of Firebase too matters: otherwise the reload restores the user,
+  // the landing page sends them to the dashboard, the API says 401 again, and
+  // the page keeps bouncing. Several API calls can fail at once: act once.
+  let handlingUnauthorized = false
+  async function handleUnauthorized() {
+    if (handlingUnauthorized) return
+    handlingUnauthorized = true
     user.value = null
     session.value = null
-    authClient.clearSession()
     error.value = 'Your session has expired. Please sign in again.'
+    await authClient.signOut()
     if (window.location.pathname !== '/') {
       window.location.href = '/'
+    } else {
+      handlingUnauthorized = false
     }
   }
 

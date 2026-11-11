@@ -83,7 +83,8 @@ export async function validateSession(req: Request): Promise<Session | null> {
     const now = Date.now()
     tokenCache.set(token, {
       session,
-      expiresAt: now + CACHE_TTL_MS
+      // Never trust a cached token past its own expiry
+      expiresAt: Math.min(now + CACHE_TTL_MS, decoded.exp * 1000)
     })
 
     // Evict expired entries periodically
@@ -103,10 +104,20 @@ export async function validateSession(req: Request): Promise<Session | null> {
   }
 }
 
-// Helper to create unauthorized response
+// Helper to create unauthorized response.
+// When the server's own sign-in check isn't set up (Firebase Admin env vars
+// missing or broken), nobody can be verified: answer 503 instead of 401. A 401
+// makes the browser drop the session, and a signed-in user would be bounced
+// between the landing page and the dashboard without ever seeing why.
 export function unauthorizedResponse() {
   const headers = new Headers()
   headers.set('Content-Type', 'application/json')
+  if (!admin.apps.length) {
+    return new Response(
+      JSON.stringify({ error: 'Sign-in is temporarily unavailable. Please try again later.' }),
+      { status: 503, headers }
+    )
+  }
   return new Response(
     JSON.stringify({ error: 'Unauthorized' }),
     { status: 401, headers }
