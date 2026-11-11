@@ -107,7 +107,7 @@ export async function sendImportCompletionEmail(data: ImportCompletionEmail): Pr
       `
     })
 
-    console.log(`Import completion email sent to ${data.to}`)
+    console.log('Import completion email sent') // no address in logs (privacy)
     return true
   } catch (error) {
     console.error('Failed to send email:', error)

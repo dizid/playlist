@@ -8,8 +8,8 @@ const auth = useAuthStore()
 const library = useLibraryStore()
 const router = useRouter()
 
-function handleLogout() {
-  auth.logout()
+async function handleLogout() {
+  await auth.logout()
   router.push('/')
 }
 

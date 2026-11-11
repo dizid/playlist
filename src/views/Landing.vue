@@ -1,11 +1,12 @@
 <script setup>
 import { useAuthStore } from '../stores/auth'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { onMounted } from 'vue'
 import { SIGN_IN_PROVIDERS } from '../services/firebase'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 // Sign-in buttons next to Google's (Google keeps its own multi-colour button).
 // Which ones show is set by SIGN_IN_PROVIDERS in services/firebase.js.
@@ -33,7 +34,10 @@ onMounted(async () => {
     await auth.restoreSession()
   }
   if (auth.isAuthenticated) {
-    router.push('/dashboard')
+    // Back to the page that asked for sign-in (only plain paths on this site)
+    const target = route.query.redirect
+    const safe = typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') && !target.startsWith('/\\')
+    router.push(safe ? target : '/dashboard')
   }
   // Reset stale loading state
   if (auth.isLoading && !auth.isAuthenticated) {

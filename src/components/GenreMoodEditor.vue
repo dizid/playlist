@@ -17,6 +17,7 @@ const library = useLibraryStore()
 const selectedGenres = ref([...(props.song.genres || [])])
 const selectedMoods = ref([...(props.song.moods || [])])
 const isSaving = ref(false)
+const saveError = ref('')
 
 // Available options (our taxonomy)
 const genreOptions = ['rock', 'pop', 'electronic', 'hip-hop', 'r&b', 'jazz', 'metal', 'indie', 'folk', 'classical']
@@ -59,6 +60,7 @@ async function save() {
   }
 
   isSaving.value = true
+  saveError.value = ''
   try {
     await library.updateSongTags(props.song.id, {
       genres: selectedGenres.value,
@@ -68,6 +70,7 @@ async function save() {
     emit('close')
   } catch (e) {
     console.error('Failed to save tags:', e)
+    saveError.value = "Couldn't save the tags. Please try again."
   } finally {
     isSaving.value = false
   }
@@ -148,6 +151,8 @@ function cancel() {
           </button>
         </div>
       </div>
+
+      <p v-if="saveError" class="text-sm text-red-400 mb-3" role="alert">{{ saveError }}</p>
 
       <!-- Actions -->
       <div class="flex items-center justify-end gap-3">

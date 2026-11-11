@@ -295,9 +295,26 @@ const quickActions = computed(() => {
         </div>
       </div>
 
+      <!-- Load error (was shown as "No music yet") -->
+      <div
+        v-if="library.songs.length === 0 && !library.isLoading && library.error"
+        class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
+        role="alert"
+      >
+        <h3 class="text-xl font-semibold text-white mb-2">Couldn't load your music</h3>
+        <p class="text-zinc-400 mb-6">Something went wrong on our side. Your library is safe.</p>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          @click="library.fetchSongs()"
+        >
+          Try again
+        </button>
+      </div>
+
       <!-- Empty State -->
       <div
-        v-if="library.songs.length === 0 && !library.isLoading"
+        v-else-if="library.songs.length === 0 && !library.isLoading"
         class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto text-zinc-600 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>

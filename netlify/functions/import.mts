@@ -75,7 +75,7 @@ export default async (req: Request, context: Context) => {
           'pending',
           ${body.notifyEmail !== false},
           ${body.notifyPush !== false},
-          ${(body.email && body.email === session.user.email) ? body.email : null},
+          ${(typeof body.email === 'string' && body.email.trim().toLowerCase() === (session.user.email || '').toLowerCase()) ? session.user.email : null},
           ${JSON.stringify(body.songs)}::jsonb
         )
         RETURNING id, status, total_items, created_at

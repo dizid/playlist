@@ -94,7 +94,8 @@ router.beforeEach(async (to, from, next) => {
 
     // After restore attempt, check again
     if (!authStore.isAuthenticated) {
-      return next({ name: 'landing' })
+      // Remember where they were going; the landing page sends them there after sign-in
+      return next({ name: 'landing', query: to.fullPath !== '/dashboard' ? { redirect: to.fullPath } : {} })
     }
   }
 

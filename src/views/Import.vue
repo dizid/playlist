@@ -546,7 +546,16 @@ function handleShazamFile(event) {
         message: error.message || 'Failed to parse Shazam CSV'
       }
       isCollectingData.value = false
+    } finally {
+      // Lets the same file be picked again
+      event.target.value = ''
     }
+  }
+  // A read error used to leave the spinner running forever
+  reader.onerror = () => {
+    isCollectingData.value = false
+    event.target.value = ''
+    importResults.value = { success: false, message: "Couldn't read that file. Please try again." }
   }
   reader.readAsText(file)
 }

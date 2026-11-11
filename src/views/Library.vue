@@ -235,6 +235,23 @@ const filteredSongs = computed(() => {
       />
     </div>
 
+    <!-- Load error (was shown as "Your library is empty") -->
+    <div
+      v-else-if="!library.isLoading && library.error && library.songs.length === 0"
+      class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
+      role="alert"
+    >
+      <h3 class="text-xl font-semibold text-white mb-2">Couldn't load your music</h3>
+      <p class="text-zinc-400 mb-4">Something went wrong on our side. Your library is safe.</p>
+      <button
+        type="button"
+        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+        @click="library.fetchSongs()"
+      >
+        Try again
+      </button>
+    </div>
+
     <!-- Empty State -->
     <div
       v-else-if="!library.isLoading"

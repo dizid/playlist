@@ -146,7 +146,8 @@ async function confirmDelete() {
             <span class="text-white">YouTube</span>
           </div>
           <div class="flex items-center gap-3">
-            <span v-if="auth.hasYouTubeAccess" class="text-sm text-green-500">Connected</span>
+            <span v-if="auth.isYouTubeTokenValid" class="text-sm text-green-500">Connected</span>
+            <span v-else-if="auth.hasYouTubeAccess" class="text-sm text-amber-400">Expired</span>
             <button
               v-if="auth.hasYouTubeAccess"
               @click="auth.disconnectYouTube()"
@@ -155,11 +156,11 @@ async function confirmDelete() {
               Disconnect
             </button>
             <button
-              v-else
+              v-if="!auth.isYouTubeTokenValid"
               @click="auth.connectYouTube()"
               class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
             >
-              Connect
+              {{ auth.hasYouTubeAccess ? 'Reconnect' : 'Connect' }}
             </button>
           </div>
         </div>

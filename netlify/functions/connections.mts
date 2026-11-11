@@ -60,7 +60,10 @@ export default async (req: Request, context: Context) => {
         if (error instanceof ProviderError && error.userFacing) {
           return errorResponse(error.message, 400)
         }
-        throw error
+        // Last.fm / ListenBrainz down or slow: say so (was "Internal server error")
+        console.error('Connect: provider check failed:', error)
+        const service = body.provider === 'lastfm' ? 'Last.fm' : 'ListenBrainz'
+        return errorResponse(`${service} isn't answering right now. Please try again in a minute.`, 503)
       }
 
       // Same username again: keep progress. Different username: start the import from scratch.
