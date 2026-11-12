@@ -62,6 +62,34 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
+  // Whole-library search results (the loaded list holds at most one page of
+  // 200). null = no server search active. Doesn't touch songs/pagination/totals.
+  const searchResults = ref(null)
+  const isSearching = ref(false)
+  let searchSeq = 0
+
+  async function searchSongs(query) {
+    const q = (query || '').trim()
+    const seq = ++searchSeq
+    if (!q) {
+      searchResults.value = null
+      isSearching.value = false
+      return
+    }
+    isSearching.value = true
+    try {
+      const result = await api.getSongs({ q }, { page: 1, limit: 200 })
+      // Ignore answers to an older query that arrive late
+      if (seq === searchSeq) {
+        searchResults.value = { query: q, songs: result.songs, total: result.pagination.total }
+      }
+    } catch (e) {
+      if (seq === searchSeq) error.value = e.message
+    } finally {
+      if (seq === searchSeq) isSearching.value = false
+    }
+  }
+
   async function loadMore() {
     if (pagination.value.page < pagination.value.totalPages) {
       await fetchSongs({
@@ -279,6 +307,9 @@ export const useLibraryStore = defineStore('library', () => {
     // Actions
     fetchSongs,
     loadMore,
+    searchResults,
+    isSearching,
+    searchSongs,
     fetchPlaylists,
     fetchHistory,
     addSong,

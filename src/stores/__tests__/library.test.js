@@ -235,4 +235,41 @@ describe('useLibraryStore', () => {
       expect(api.createPlaylist).not.toHaveBeenCalled()
     })
   })
+  describe('searchSongs (whole-library search)', () => {
+    it('asks the server with q and keeps songs, pagination and totals untouched', async () => {
+      store.songs = [{ id: 'loaded' }]
+      store.pagination = { page: 1, limit: 200, total: 900, totalPages: 5 }
+      api.getSongs.mockResolvedValueOnce({ songs: [{ id: 'deep', title: 'Deep Cut' }], pagination: { total: 1 }, totalPlays: 3 })
+
+      await store.searchSongs('  deep  ')
+
+      expect(api.getSongs).toHaveBeenCalledWith({ q: 'deep' }, { page: 1, limit: 200 })
+      expect(store.searchResults).toEqual({ query: 'deep', songs: [{ id: 'deep', title: 'Deep Cut' }], total: 1 })
+      expect(store.songs).toEqual([{ id: 'loaded' }])
+      expect(store.pagination.total).toBe(900)
+      expect(store.isSearching).toBe(false)
+    })
+
+    it('ignores a late answer to an older query', async () => {
+      let resolveOld
+      api.getSongs
+        .mockReturnValueOnce(new Promise((r) => { resolveOld = r }))
+        .mockResolvedValueOnce({ songs: [{ id: 'new' }], pagination: { total: 1 } })
+
+      const older = store.searchSongs('old')
+      await store.searchSongs('new')
+      resolveOld({ songs: [{ id: 'old' }], pagination: { total: 1 } })
+      await older
+
+      expect(store.searchResults.query).toBe('new')
+      expect(store.searchResults.songs).toEqual([{ id: 'new' }])
+    })
+
+    it('an empty query clears the search without calling the server', async () => {
+      store.searchResults = { query: 'x', songs: [], total: 0 }
+      await store.searchSongs('   ')
+      expect(api.getSongs).not.toHaveBeenCalled()
+      expect(store.searchResults).toBeNull()
+    })
+  })
 })

@@ -62,6 +62,7 @@ export const api = {
     const params = new URLSearchParams()
     if (filters.genres?.length) params.set('genres', filters.genres.join(','))
     if (filters.moods?.length) params.set('moods', filters.moods.join(','))
+    if (filters.q) params.set('q', filters.q)
     params.set('page', String(page))
     params.set('limit', String(limit))
 

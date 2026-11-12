@@ -30,13 +30,30 @@ export default async (req: Request, context: Context) => {
       const genres = genresParam ? genresParam.split(',').filter(g => g) : null
       const moods = moodsParam ? moodsParam.split(',').filter(m => m) : null
 
+      // Optional text search over the whole library (title, artist, channel).
+      // The Library page loads at most 200 songs, so searching only those said
+      // "No songs found" for songs further down. LIKE wildcards are escaped.
+      const q = (url.searchParams.get('q') || '').trim().slice(0, 100)
+      const pattern = q ? `%${q.replace(/[\\%_]/g, (c) => '\\' + c)}%` : null
+
       // Get total count and paginated songs. The ORDER BY ends in unique
       // columns: most songs tie on popularity (never computed) and play_count
       // (0 after an import), and without a fixed order 'Load more' could
       // repeat some songs and skip others.
       let songs
       let countResult
-      if (genres && moods) {
+      if (pattern) {
+        countResult = await sql`
+          SELECT COUNT(*)::int AS total, COALESCE(SUM(play_count), 0)::int AS total_plays FROM songs
+          WHERE user_id = ${userId}
+            AND (title ILIKE ${pattern} OR artist ILIKE ${pattern} OR channel ILIKE ${pattern})`
+        songs = await sql`
+          SELECT * FROM songs
+          WHERE user_id = ${userId}
+            AND (title ILIKE ${pattern} OR artist ILIKE ${pattern} OR channel ILIKE ${pattern})
+          ORDER BY popularity DESC NULLS LAST, play_count DESC, created_at DESC, id
+          LIMIT ${limit} OFFSET ${offset}`
+      } else if (genres && moods) {
         countResult = await sql`
           SELECT COUNT(*)::int AS total, COALESCE(SUM(play_count), 0)::int AS total_plays FROM songs
           WHERE user_id = ${userId} AND genres && ${genres}::text[] AND moods && ${moods}::text[]`

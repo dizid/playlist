@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useLibraryStore } from '../stores/library'
 import SongCard from '../components/SongCard.vue'
 
@@ -67,11 +67,33 @@ onMounted(async () => {
   await library.fetchSongs()
 })
 
+// Only part of a big library is loaded, so search the rest on the server
+// (debounced); small libraries are searched in the browser as before.
+const libraryFullyLoaded = computed(() => library.songs.length >= (library.pagination.total || 0))
+let searchTimer = null
+watch(searchQuery, (value) => {
+  clearTimeout(searchTimer)
+  if (!value.trim() || libraryFullyLoaded.value) {
+    library.searchSongs('')
+    return
+  }
+  searchTimer = setTimeout(() => library.searchSongs(value), 300)
+})
+
+// Server results for the current query, if they're in
+const serverSearch = computed(() => {
+  const q = searchQuery.value.trim()
+  const results = library.searchResults
+  return q && results && results.query === q ? results : null
+})
+
 const filteredSongs = computed(() => {
   let songs = library.songs
 
-  // 1. Search filter
-  if (searchQuery.value) {
+  // 1. Search filter: whole-library results when available, else the loaded songs
+  if (serverSearch.value) {
+    songs = serverSearch.value.songs
+  } else if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     songs = songs.filter(s =>
       s.title?.toLowerCase().includes(query) ||
@@ -165,7 +187,7 @@ const filteredSongs = computed(() => {
         class="ml-auto text-sm text-zinc-500"
         aria-live="polite"
       >
-        Showing {{ filteredSongs.length }} of {{ library.songs.length }} songs
+        Showing {{ filteredSongs.length }} of {{ serverSearch ? library.songCount : library.songs.length }} songs<span v-if="library.isSearching"> (searching your whole library…)</span>
       </span>
     </div>
 
@@ -267,7 +289,7 @@ const filteredSongs = computed(() => {
     </div>
 
     <!-- Load More -->
-    <div v-if="library.pagination.page < library.pagination.totalPages && !library.isLoading" class="flex justify-center py-6">
+    <div v-if="library.pagination.page < library.pagination.totalPages && !library.isLoading && !serverSearch" class="flex justify-center py-6">
       <button
         @click="library.loadMore()"
         class="px-6 py-3 bg-zinc-800 border border-zinc-700 text-white rounded-lg hover:border-zinc-600 transition-colors"
