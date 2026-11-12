@@ -27,6 +27,7 @@ Step-by-step guides, checked against each service's own help pages (index: https
 - [Spotify Listening History: See It, Download It, Keep It](https://tunecraft.music/blog/spotify-listening-history)
 - [Export YouTube Music Playlists and Liked Songs: What Works](https://tunecraft.music/blog/export-youtube-music-playlists-liked-songs)
 - [Apple Music Listening History: Replay, Data Copy, Scrobbling](https://tunecraft.music/blog/apple-music-listening-history)
+- [Spotify Wrapped 2026: Likely Date, What Counts, Stats Any Time](https://tunecraft.music/blog/spotify-wrapped-2026-date-stats)
 
 ## Who it is for
 - People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.

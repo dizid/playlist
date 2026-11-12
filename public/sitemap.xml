@@ -31,6 +31,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://tunecraft.music/blog/spotify-wrapped-2026-date-stats</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://tunecraft.music/blog/spotify-listening-history</loc>
     <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
