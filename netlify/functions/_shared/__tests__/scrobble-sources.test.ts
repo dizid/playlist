@@ -87,25 +87,23 @@ describe('normalizeListenBrainzListen', () => {
 })
 
 describe('placeholderYouTubeId', () => {
-  // Same algorithm as the inline copies in songs.mts and import-process-background.mts,
-  // so Shazam imports and synced plays of one song share a row
-  function inlineVersion(artist: string, title: string) {
-    const hashInput = `${artist}:${title}`.toLowerCase()
-    const hashCode = Array.from(hashInput).reduce((hash, char) => {
-      return ((hash << 5) - hash) + char.charCodeAt(0) | 0
-    }, 0)
-    return `shz${Math.abs(hashCode).toString(36).slice(0, 8)}`
-  }
-
-  it('matches the existing Shazam placeholder ids', () => {
-    for (const [artist, title] of [['Foo Fighters', 'My Hero'], ['Röyksopp', 'Some Resolve'], ['A', 'B']]) {
-      expect(placeholderYouTubeId(artist, title)).toBe(inlineVersion(artist, title))
-    }
+  it('is stable, case-insensitive and fits the 11-character youtube_id column', () => {
+    expect(placeholderYouTubeId('OASIS', 'Wonderwall')).toBe(placeholderYouTubeId('oasis', 'wonderwall'))
+    expect(placeholderYouTubeId('Oasis', 'Wonderwall')).toMatch(/^shz[0-9a-z]{8}$/)
+    expect(placeholderYouTubeId('Some Very Long Artist Name', 'And A Very Long Title')).toHaveLength(11)
+    expect(placeholderYouTubeId('', '')).toHaveLength(11)
   })
 
-  it('is case-insensitive and fits the 11-character youtube_id column', () => {
-    expect(placeholderYouTubeId('OASIS', 'Wonderwall')).toBe(placeholderYouTubeId('oasis', 'wonderwall'))
-    expect(placeholderYouTubeId('Some Very Long Artist Name', 'And A Very Long Title').length).toBeLessThanOrEqual(11)
+  it('gives different songs different ids where the old 31-bit hash collided', () => {
+    // "az:x" and "b[:x" had the same old hash (97*31+122 = 98*31+91), so one
+    // song's plays landed on the other
+    expect(placeholderYouTubeId('az', 'x')).not.toBe(placeholderYouTubeId('b[', 'x'))
+  })
+
+  it('has no collisions across 50,000 distinct songs', () => {
+    const ids = new Set<string>()
+    for (let i = 0; i < 50_000; i++) ids.add(placeholderYouTubeId(`Artist ${i % 997}`, `Track ${i}`))
+    expect(ids.size).toBe(50_000)
   })
 })
 

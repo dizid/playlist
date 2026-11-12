@@ -5,6 +5,7 @@ import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 import { searchYouTubeVideo, youtubeQuotaExceeded } from './_shared/youtube'
+import { placeholderYouTubeId } from './_shared/placeholder-id'
 import { sendImportCompletionEmail } from './_shared/resend'
 import { sendPushNotificationToMany, createImportCompletionPayload, type PushSubscription } from './_shared/webpush'
 
@@ -19,11 +20,6 @@ function delay(ms: number): Promise<void> {
 }
 
 // Simple hash function for placeholder IDs
-function hashCode(str: string): number {
-  return Array.from(str).reduce((hash, char) => {
-    return ((hash << 5) - hash) + char.charCodeAt(0) | 0
-  }, 0)
-}
 
 interface SongPayload {
   youtubeId?: string
@@ -126,15 +122,13 @@ export default async (req: Request, context: Context) => {
             } else {
               // Fallback to placeholder. Quota used up: 'pending', so "auto-tag"
               // (enrich) can still find the video later (was 'not_found' for good)
-              const hashInput = `${song.artist}:${song.title}`.toLowerCase()
-              youtubeId = `shz${Math.abs(hashCode(hashInput)).toString(36).slice(0, 8)}`
+              youtubeId = placeholderYouTubeId(song.artist, song.title)
               youtubeStatus = youtubeQuotaExceeded() ? 'pending' : 'not_found'
             }
             await delay(RATE_LIMIT_MS)
           } else if (!youtubeId) {
             // No artist/title to search
-            const hashInput = `${song.artist || ''}:${song.title}`.toLowerCase()
-            youtubeId = `shz${Math.abs(hashCode(hashInput)).toString(36).slice(0, 8)}`
+            youtubeId = placeholderYouTubeId(song.artist || '', song.title)
             youtubeStatus = 'not_found'
           }
 

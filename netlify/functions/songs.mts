@@ -2,6 +2,7 @@ import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 import { searchYouTubeVideo } from './_shared/youtube'
+import { placeholderYouTubeId } from './_shared/placeholder-id'
 import { isValidUuid } from './_shared/validation'
 
 export default async (req: Request, context: Context) => {
@@ -129,20 +130,12 @@ export default async (req: Request, context: Context) => {
           youtubeStatus = 'valid'
         } else {
           // Fallback to placeholder if YouTube search fails
-          const hashInput = `${body.artist}:${body.title}`.toLowerCase()
-          const hashCode = Array.from(hashInput).reduce((hash, char) => {
-            return ((hash << 5) - hash) + char.charCodeAt(0) | 0
-          }, 0)
-          youtubeId = `shz${Math.abs(hashCode).toString(36).slice(0, 8)}`
+          youtubeId = placeholderYouTubeId(body.artist, body.title)
           youtubeStatus = 'not_found'
         }
       } else if (!youtubeId) {
         // No artist/title to search, use placeholder
-        const hashInput = `${body.artist || ''}:${body.title}`.toLowerCase()
-        const hashCode = Array.from(hashInput).reduce((hash, char) => {
-          return ((hash << 5) - hash) + char.charCodeAt(0) | 0
-        }, 0)
-        youtubeId = `shz${Math.abs(hashCode).toString(36).slice(0, 8)}`
+        youtubeId = placeholderYouTubeId(body.artist || '', body.title)
         youtubeStatus = 'not_found'
       }
 

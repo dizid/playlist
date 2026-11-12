@@ -278,11 +278,6 @@ export function getScrobbleClient(provider: Provider): ScrobbleClient {
   return provider === 'lastfm' ? lastfmClient : listenBrainzClient
 }
 
-// Placeholder youtube_id for songs that have no YouTube video yet.
-// MUST stay identical to the inline versions in songs.mts and import-process-background.mts,
-// so a song from Shazam, Last.fm and ListenBrainz all land on the same row.
-export function placeholderYouTubeId(artist: string, title: string): string {
-  const hashInput = `${artist}:${title}`.toLowerCase()
-  const hash = Array.from(hashInput).reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0) | 0, 0)
-  return `shz${Math.abs(hash).toString(36).slice(0, 8)}`
-}
+// Placeholder youtube_id for songs that have no YouTube video yet (one shared
+// copy, see placeholder-id.ts).
+export { placeholderYouTubeId } from './placeholder-id'
