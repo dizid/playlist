@@ -25,6 +25,7 @@ Step-by-step guides, checked against each service's own help pages (index: https
 - [YouTube Music Mixes and Playlists: What You Can and Cannot Set](https://tunecraft.music/blog/youtube-music-smart-playlists-mixes)
 - [Spotify to YouTube Music (and Back): What Transfers in 2026](https://tunecraft.music/blog/spotify-youtube-music-transfer)
 - [Spotify Listening History: See It, Download It, Keep It](https://tunecraft.music/blog/spotify-listening-history)
+- [Export YouTube Music Playlists and Liked Songs: What Works](https://tunecraft.music/blog/export-youtube-music-playlists-liked-songs)
 
 ## Who it is for
 - People whose music is scattered across YouTube, Shazam and scrobbling services and who want one place that remembers what they love, without switching away from YouTube.
