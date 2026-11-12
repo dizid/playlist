@@ -27,7 +27,7 @@ export default async (req: Request, context: Context) => {
           s.thumbnail,
           s.youtube_id
         FROM play_history ph
-        JOIN songs s ON ph.song_id = s.id
+        JOIN songs s ON ph.song_id = s.id AND s.user_id = ${userId}
         WHERE ph.user_id = ${userId}
         ORDER BY ph.played_at DESC
         LIMIT ${limit}
@@ -47,16 +47,18 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Invalid songId format', 400)
       }
 
+      // Only the caller's own songs (T-0559): any song id used to be accepted, and the
+      // GET above then showed that song's title and artist to the caller.
       const result = await sql`
         INSERT INTO play_history (user_id, song_id, duration_watched, completed)
-        VALUES (
-          ${userId},
-          ${body.songId}::uuid,
-          ${body.durationWatched || null},
-          ${body.completed || false}
-        )
+        SELECT ${userId}, s.id, ${body.durationWatched || null}, ${body.completed || false}
+        FROM songs s
+        WHERE s.id = ${body.songId}::uuid AND s.user_id = ${userId}
         RETURNING *
       `
+      if (result.length === 0) {
+        return errorResponse('Song not found', 404)
+      }
 
       // Also update the song's play_count and last_played
       await sql`
