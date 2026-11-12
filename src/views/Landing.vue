@@ -1,7 +1,8 @@
 <script setup>
 import { useAuthStore } from '../stores/auth'
 import { useRoute, useRouter } from 'vue-router'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+import { detectInAppBrowser, chromeIntentUrl } from '../lib/in-app-browser'
 import { SIGN_IN_PROVIDERS } from '../services/firebase'
 
 const auth = useAuthStore()
@@ -28,7 +29,25 @@ const otherProviders = SIGN_IN_PROVIDERS
   .filter(id => id !== 'google')
   .map(id => ({ id, ...PROVIDER_BUTTONS[id] }))
 
+// Google refuses its sign-in inside apps' built-in browsers (LinkedIn, Facebook,
+// Instagram…): say so and show how to open the page in a real browser (T-0514)
+const inApp = ref(null)
+const androidChromeUrl = ref(null)
+const linkCopied = ref(false)
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    linkCopied.value = true
+  } catch {
+    // Clipboard blocked in this webview: show the address so it can be copied by hand
+    window.prompt('Copy this link and open it in your browser:', window.location.href)
+  }
+}
+
 onMounted(async () => {
+  inApp.value = detectInAppBrowser(window.navigator.userAgent, window.navigator.standalone === true)
+  if (inApp.value) androidChromeUrl.value = chromeIntentUrl(window.location.href, inApp.value.platform)
   // Wait for Firebase auth state (handles redirect return after signInWithRedirect)
   if (!auth.isAuthenticated) {
     await auth.restoreSession()
@@ -74,6 +93,25 @@ onMounted(async () => {
         <p class="text-zinc-500 mb-10">
           Own your taste data. Smart playlists. Zero algorithm slop.
         </p>
+
+        <!-- Inside an app's built-in browser Google refuses the sign-in (T-0514) -->
+        <div
+          v-if="inApp"
+          class="mb-6 mx-auto max-w-md px-4 py-4 bg-zinc-900 border border-zinc-700 rounded-xl text-sm text-zinc-300 text-left"
+          role="note"
+          data-in-app-notice
+        >
+          <p class="font-semibold text-white mb-1">Open this page in your browser to sign in</p>
+          <p>Google doesn't allow sign-in inside {{ inApp.appName ? `the ${inApp.appName} app's` : "this app's" }} built-in browser.</p>
+          <p v-if="inApp.platform === 'ios'" class="mt-1">Tap <strong>•••</strong> or the share icon, then <strong>Open in Safari</strong> (or Open in browser).</p>
+          <p v-else class="mt-1">Tap <strong>⋮</strong> (top right), then <strong>Open in browser</strong>.</p>
+          <div class="mt-3 flex flex-wrap gap-3">
+            <a v-if="androidChromeUrl" :href="androidChromeUrl" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium">Open in Chrome</a>
+            <button type="button" class="px-4 py-2 rounded-lg bg-zinc-800 text-white font-medium" @click="copyLink">
+              {{ linkCopied ? 'Link copied: paste it in your browser' : 'Copy link' }}
+            </button>
+          </div>
+        </div>
 
         <!-- CTA Buttons (preserved exactly) -->
         <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 justify-center">
