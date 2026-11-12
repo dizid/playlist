@@ -38,10 +38,87 @@ export function decodeEntities(text) {
   })
 }
 
-/** "Nov 1, 2026, 10:00:00 AM GMT+07:00" -> ISO string; null when the browser can't read it. */
+// Takeout writes the date in the account's language and time zone. Browsers only
+// read English months and the US zone names, so "Nov 1, 2026, 10:00:00 AM CET",
+// "... ICT" (Thailand) or "1 nov. 2026, 10:00:00 CET" lost their date.
+// Offsets are standard/summer time as named; for the play date that is plenty.
+const ZONE_OFFSETS = {
+  UTC: 0, GMT: 0, WET: 0, WEST: 60, BST: 60, IST: 330, CET: 60, CEST: 120, EET: 120, EEST: 180,
+  MSK: 180, SAST: 120, ICT: 420, WIB: 420, SGT: 480, HKT: 480, PHT: 480, PHST: 480, AWST: 480,
+  JST: 540, KST: 540, ACST: 570, AEST: 600, AEDT: 660, NZST: 720, NZDT: 780,
+  BRT: -180, ART: -180, AST: -240, EST: -300, EDT: -240, CST: -360, CDT: -300,
+  MST: -420, MDT: -360, PST: -480, PDT: -420, AKST: -540, AKDT: -480, HST: -600,
+  // German names
+  MEZ: 60, MESZ: 120, OEZ: 120, OESZ: 180, WEZ: 0, WESZ: 60
+}
+
+// Month names and short forms (English, Dutch, German, French, Spanish, Portuguese,
+// Italian), lowercase without dots; the longest matching start of the word wins.
+const MONTH_NAMES = [
+  ['jan', 'janv', 'ene', 'gen'],
+  ['feb', 'fév', 'fev', 'févr', 'fevr'],
+  ['mar', 'mrt', 'mär', 'maa', 'mars', 'març'],
+  ['apr', 'avr', 'abr'],
+  ['may', 'mei', 'mai', 'mag'],
+  ['jun', 'juin', 'giu'],
+  ['jul', 'juil', 'lug'],
+  ['aug', 'août', 'aout', 'ago'],
+  ['sep', 'sept', 'set'],
+  ['oct', 'okt', 'out', 'ott'],
+  ['nov'],
+  ['dec', 'dez', 'déc', 'dic']
+]
+
+function monthIndex(word) {
+  const w = word.toLowerCase().replace(/\./g, '')
+  let best = -1
+  let bestLength = 0
+  MONTH_NAMES.forEach((names, index) => {
+    for (const name of names) {
+      if (w.startsWith(name) && name.length > bestLength) { best = index; bestLength = name.length }
+    }
+  })
+  return best
+}
+
+/** Minutes east of UTC for "GMT+07:00", "UTC-5", "CET"...; null when unknown. */
+function zoneOffsetMinutes(zone) {
+  const numeric = /^(?:GMT|UTC)([+-])(\d{1,2})(?::?(\d{2}))?$/i.exec(zone)
+  if (numeric) return (numeric[1] === '-' ? -1 : 1) * (Number(numeric[2]) * 60 + Number(numeric[3] || 0))
+  const named = ZONE_OFFSETS[zone.toUpperCase()]
+  return named === undefined ? null : named
+}
+
+/** "Nov 1, 2026, 10:00:00 AM CET" or "1 nov. 2026, 10:00:00 CET" -> epoch ms; NaN if unreadable. */
+function parseLocalizedDate(text) {
+  const zoneMatch = /\s((?:GMT|UTC)[+-]\d{1,2}(?::?\d{2})?|[A-Z]{2,5})$/.exec(text)
+  const offset = zoneMatch ? zoneOffsetMinutes(zoneMatch[1]) : 0
+  if (offset === null) return NaN
+  const body = zoneMatch ? text.slice(0, zoneMatch.index) : text
+  const time = /(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?\s?[Mm]\.?)?/.exec(body)
+  // Month first ("Nov 1, 2026") or day first ("1 nov. 2026", "1. Nov. 2026", "1 de nov. de 2026")
+  const monthFirst = /^([^\d\s,]+)\.?\s+(\d{1,2}),?\s+(\d{4})/.exec(body)
+  const dayFirst = /^(\d{1,2})\.?\s+(?:de\s+)?([^\d\s,]+)\.?\s+(?:de\s+)?(\d{4})/.exec(body)
+  const parts = monthFirst
+    ? { month: monthIndex(monthFirst[1]), day: Number(monthFirst[2]), year: Number(monthFirst[3]) }
+    : dayFirst
+      ? { month: monthIndex(dayFirst[2]), day: Number(dayFirst[1]), year: Number(dayFirst[3]) }
+      : null
+  if (!parts || parts.month < 0 || !time) return NaN
+  let hour = Number(time[1])
+  const meridiem = (time[4] || '').toLowerCase().replace(/[.\s]/g, '')
+  if (meridiem === 'pm' && hour < 12) hour += 12
+  if (meridiem === 'am' && hour === 12) hour = 0
+  return Date.UTC(parts.year, parts.month, parts.day, hour, Number(time[2]), Number(time[3] || 0)) - offset * 60000
+}
+
+/** "Nov 1, 2026, 10:00:00 AM GMT+07:00" -> ISO string; null when it can't be read. */
 function parsePlayDate(text, now) {
-  const cleaned = text.replace(/[  ]/g, ' ').trim()
-  const time = Date.parse(cleaned)
+  const cleaned = text.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim()
+  // The browser reads English dates with GMT/UTC offsets or US zone names itself
+  const browserReadable = /(?:GMT|UTC)[+-]\d|\s(?:GMT|UTC|EST|EDT|CST|CDT|MST|MDT|PST|PDT)$/.test(cleaned)
+  let time = browserReadable ? Date.parse(cleaned) : NaN
+  if (!Number.isFinite(time)) time = parseLocalizedDate(cleaned)
   if (!Number.isFinite(time) || time < EARLIEST_PLAY || time > now + 86400000) return null
   return new Date(time).toISOString()
 }

@@ -51,10 +51,10 @@ describe('parseTakeoutHistory', () => {
     expect(songs[0].youtubeId).toBe('AAAAAAAAAAA')
   })
 
-  it('decodes HTML entities and leaves dates it cannot read empty', () => {
+  it('decodes HTML entities and reads non-English dates and zone names', () => {
     const { songs } = parseTakeoutHistory(FILE, { now: NOW })
     const acdc = songs.find(s => s.youtubeId === 'FFFFFFFFFFF')
-    expect(acdc).toMatchObject({ title: "Rock & Roll Ain't Noise Pollution", artist: 'AC/DC', playCount: 1, lastPlayed: null })
+    expect(acdc).toMatchObject({ title: "Rock & Roll Ain't Noise Pollution", artist: 'AC/DC', playCount: 1, lastPlayed: '2026-11-01T09:00:00.000Z' })
   })
 
   it('imports only music by default, skips ads and removed videos', () => {
@@ -102,3 +102,30 @@ describe('decodeEntities', () => {
     expect(decodeEntities('A &amp; B &quot;C&quot; &#39;D&#39; &#x2764; &bogus;')).toBe('A & B "C" \'D\' ❤ &bogus;')
   })
 })
+
+describe('play dates in other languages and time zones', () => {
+  const one = (date) => parseTakeoutHistory(
+    entry({ header: 'YouTube Music', host: 'music.', id: 'ZZZZZZZZZZZ', title: 'Song', channel: 'Band - Topic', date }),
+    { now: NOW }
+  ).songs[0].lastPlayed
+
+  it.each([
+    ['Nov 3, 2026, 9:15:00 PM GMT+07:00', '2026-11-03T14:15:00.000Z'],
+    ['Nov 3, 2026, 9:15:00 PM ICT', '2026-11-03T14:15:00.000Z'], // Thailand
+    ['Nov 3, 2026, 3:15:00 PM CET', '2026-11-03T14:15:00.000Z'],
+    ['3 nov. 2026, 15:15:00 CET', '2026-11-03T14:15:00.000Z'], // Dutch
+    ['3. Nov. 2026, 15:15:00 MEZ', '2026-11-03T14:15:00.000Z'], // German
+    ['3 de nov. de 2026, 11:15:00 BRT', '2026-11-03T14:15:00.000Z'], // Portuguese
+    ['3 mrt. 2026, 10:00:00 CET', '2026-03-03T09:00:00.000Z'],
+    ['Nov 3, 2026, 12:05:00 AM IST', '2026-11-02T18:35:00.000Z'], // India, midnight hour
+    ['Nov 3, 2026, 9:15:00 AM PST', '2026-11-03T17:15:00.000Z']
+  ])('%s -> %s', (date, iso) => {
+    expect(one(date)).toBe(iso)
+  })
+
+  it('leaves dates it really cannot read empty', () => {
+    expect(one('sometime last week')).toBeNull()
+    expect(one('Nov 3, 2026, 9:15:00 PM XYZT')).toBeNull()
+  })
+})
+
