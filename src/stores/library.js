@@ -151,11 +151,21 @@ export const useLibraryStore = defineStore('library', () => {
   // Screen-only update after a play was logged. POST /api/history (api.logPlay)
   // already adds 1 to play_count in the database; this used to also PATCH
   // the song with incrementPlayCount, so every Play tap counted twice.
+  // A song can be on screen twice: in the loaded page and in whole-library
+  // search results (separate copies from the server). Every local change must
+  // reach both, or a card from a search shows stale tags and a second tag edit
+  // overwrites the first (found in review of T-0508).
+  function songCopies(songId) {
+    const copies = songs.value.filter(s => s.id === songId)
+    const found = searchResults.value?.songs?.filter(s => s.id === songId) || []
+    return [...copies, ...found]
+  }
+
   function incrementPlayCount(songId) {
-    const song = songs.value.find(s => s.id === songId)
-    if (song) {
+    const now = new Date().toISOString()
+    for (const song of songCopies(songId)) {
       song.play_count = (song.play_count || 0) + 1
-      song.last_played = new Date().toISOString()
+      song.last_played = now
     }
   }
 
@@ -163,6 +173,12 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       await api.deleteSong(songId)
       songs.value = songs.value.filter(s => s.id !== songId)
+      if (searchResults.value) {
+        searchResults.value = {
+          ...searchResults.value,
+          songs: searchResults.value.songs.filter(s => s.id !== songId)
+        }
+      }
     } catch (e) {
       error.value = e.message
       throw e
@@ -248,8 +264,7 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       await api.updateSongTags(songId, { genres, moods })
 
-      const song = songs.value.find(s => s.id === songId)
-      if (song) {
+      for (const song of songCopies(songId)) {
         song.genres = genres
         song.moods = moods
         song.enrichment_status = 'manual'

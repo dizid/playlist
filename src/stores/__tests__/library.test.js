@@ -265,6 +265,30 @@ describe('useLibraryStore', () => {
       expect(store.searchResults.songs).toEqual([{ id: 'new' }])
     })
 
+    it('a tag edit and a play reach both the loaded song and its search-result copy', async () => {
+      api.updateSongTags = vi.fn().mockResolvedValue({})
+      store.songs = [{ id: 's1', genres: [], moods: [], play_count: 1 }]
+      store.searchResults = { query: 'x', songs: [{ id: 's1', genres: [], moods: [], play_count: 1 }, { id: 's2', genres: [] }], total: 2 }
+
+      await store.updateSongTags('s1', { genres: ['jazz'], moods: ['chill'] })
+      store.incrementPlayCount('s1')
+
+      expect(store.songs[0].genres).toEqual(['jazz'])
+      expect(store.searchResults.songs[0].genres).toEqual(['jazz'])
+      expect(store.searchResults.songs[0].moods).toEqual(['chill'])
+      expect(store.songs[0].play_count).toBe(2)
+      expect(store.searchResults.songs[0].play_count).toBe(2)
+      expect(store.searchResults.songs[1].genres).toEqual([])
+    })
+
+    it('a deleted song also leaves the search results', async () => {
+      api.deleteSong = vi.fn().mockResolvedValue({})
+      store.songs = [{ id: 's1' }]
+      store.searchResults = { query: 'x', songs: [{ id: 's1' }, { id: 's2' }], total: 2 }
+      await store.deleteSong('s1')
+      expect(store.searchResults.songs).toEqual([{ id: 's2' }])
+    })
+
     it('an empty query clears the search without calling the server', async () => {
       store.searchResults = { query: 'x', songs: [], total: 0 }
       await store.searchSongs('   ')

@@ -80,6 +80,12 @@ watch(searchQuery, (value) => {
   searchTimer = setTimeout(() => library.searchSongs(value), 300)
 })
 
+// Typed before the first page finished loading: once it's in and turns out to
+// be only part of the library, search the rest too
+watch(libraryFullyLoaded, (fullyLoaded) => {
+  if (!fullyLoaded && searchQuery.value.trim()) library.searchSongs(searchQuery.value)
+})
+
 // Server results for the current query, if they're in
 const serverSearch = computed(() => {
   const q = searchQuery.value.trim()
