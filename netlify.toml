@@ -22,6 +22,14 @@
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Content policy in REPORT-ONLY mode (T-0634, Nov 19 2026): nothing is blocked yet;
+    # browsers send violations to /api/csp-report (Netlify function log). Enforce later by
+    # renaming the header to Content-Security-Policy once the log stays clean.
+    # Firebase Auth (redirect sign-in): apis.google.com script, identitytoolkit/securetoken
+    # calls, and its helper iframe (our own /__/auth on the live site, firebaseapp.com on
+    # previews). www.googleapis.com = YouTube import. img-src: any https image (Google
+    # profile pictures, YouTube thumbnails). No inline scripts (scripts/csp-hash.mjs checks).
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src 'self' https://tunecraft-1aa7d.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; report-uri /api/csp-report"
 
 # Firebase Auth handler proxy - keeps sign-in on our own domain (authDomain = tunecraft.music).
 # Without this, signInWithRedirect breaks in Chrome/Safari/Firefox because the auth helper
