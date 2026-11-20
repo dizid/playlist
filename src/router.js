@@ -125,7 +125,7 @@ router.afterEach((to) => {
   // Set page title based on route
   document.title = routeTitles[to.name] || 'TuneCraft'
 
-  // Don't index authenticated pages or the not-found page (the server answers 200 there)
+  // Don't index authenticated pages or the not-found page (unknown URLs also get a 404 status: netlify.toml)
   let robotsMeta = document.querySelector('meta[name="robots"]')
   if (!robotsMeta) {
     robotsMeta = document.createElement('meta')

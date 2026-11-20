@@ -41,10 +41,39 @@
   status = 200
   force = true
 
-# SPA fallback - serve index.html for all routes so Vue Router can handle them
-# SPA fallback: the plain app shell. index.html is the prerendered landing page
-# (scripts/prerender.mjs), which must not show up on /dashboard, /library, ...
+# SPA fallback, only for the app's own routes (src/router.js): the plain app shell.
+# index.html is the prerendered landing page (scripts/prerender.mjs), which must not
+# show up on /dashboard, /library, ... The public pages (/, /privacy, /terms, /blog,
+# /blog/<slug>) are prerendered files and need no rule. Every other path gets
+# dist/404.html with a real 404 status (Netlify serves it automatically), so search
+# engines don't index junk URLs as copies of the app (T-0636, Nov 21 2026).
+# A new app route needs a line here too, or a hard refresh on it shows a 404.
 [[redirects]]
-  from = "/*"
+  from = "/dashboard"
+  to = "/app-shell.html"
+  status = 200
+
+[[redirects]]
+  from = "/library"
+  to = "/app-shell.html"
+  status = 200
+
+[[redirects]]
+  from = "/import"
+  to = "/app-shell.html"
+  status = 200
+
+[[redirects]]
+  from = "/playlist/*"
+  to = "/app-shell.html"
+  status = 200
+
+[[redirects]]
+  from = "/discover"
+  to = "/app-shell.html"
+  status = 200
+
+[[redirects]]
+  from = "/settings"
   to = "/app-shell.html"
   status = 200
