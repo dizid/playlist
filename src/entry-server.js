@@ -10,7 +10,7 @@ import App from './App.vue'
 import router from './router'
 
 // Blog posts for the prerender script (pages, head tags, JSON-LD, build-time checks)
-export { BLOG_POSTS } from './content/posts'
+export { BLOG_POSTS, relatedPostsFor } from './content/posts'
 
 /** The app's HTML for one route, ready to go inside <div id="app">. */
 export async function render(url) {

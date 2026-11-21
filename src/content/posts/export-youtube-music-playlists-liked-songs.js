@@ -6,6 +6,7 @@ export default {
   date: '2026-11-13',
   checked: '2026-11-12',
   readingMinutes: 5,
+  related: ['spotify-youtube-music-transfer', 'export-youtube-music-history-google-takeout', 'youtube-music-smart-playlists-mixes'],
   html: `
 <p>YouTube Music has no "export" button for playlists. Google gives you two official routes instead: Google Takeout, which downloads files, and a transfer tool that copies your playlists straight to Apple Music. This guide covers both, what the files contain, and what Google's own pages say about liked songs. Checked as of November 2026.</p>
 

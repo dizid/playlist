@@ -6,6 +6,7 @@ export default {
   date: '2026-11-12',
   checked: '2026-11-12',
   readingMinutes: 5,
+  related: ['export-youtube-music-history-google-takeout', 'youtube-music-smart-playlists-mixes', 'spotify-wrapped-2026-date-stats'],
   html: `
 <p>YouTube Music remembers what you play, but it spreads that memory over a few different places: a history list, an "On repeat" section on your channel, and a yearly Recap. This guide shows where each one lives, what controls whether your history is kept, and what you have to do to get fuller numbers. Everything below is as of November 2026, from Google's own help pages.</p>
 

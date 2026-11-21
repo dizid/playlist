@@ -3,12 +3,13 @@
 // The post body is trusted static HTML from src/content/posts (checked at build time).
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { BLOG_POSTS, findPost, formatPostDate } from '../content/posts'
+import { findPost, formatPostDate, relatedPostsFor } from '../content/posts'
 
 const route = useRoute()
 const post = computed(() => findPost(String(route.params.slug ?? '')))
-// Up to 3 other guides under each post (internal links)
-const otherPosts = computed(() => BLOG_POSTS.filter((other) => other.slug !== post.value?.slug).slice(0, 3))
+// "Related guides" under the post: its hand-picked related guides (in the prerendered HTML
+// too), so every guide is linked from other guides, not only the 3 newest ones
+const relatedPosts = computed(() => (post.value ? relatedPostsFor(post.value) : []))
 
 onMounted(() => {
   // Browser only (the router's afterEach has no per-post title)
@@ -51,11 +52,11 @@ onMounted(() => {
       >See how TuneCraft works</a>
     </section>
 
-    <section v-if="otherPosts.length" class="mt-10">
-      <h2 class="text-lg font-semibold text-white mb-3">More guides</h2>
+    <section v-if="relatedPosts.length" class="mt-10">
+      <h2 class="text-lg font-semibold text-white mb-3">Related guides</h2>
       <ul class="space-y-2">
-        <li v-for="other in otherPosts" :key="other.slug">
-          <a :href="`/blog/${other.slug}`" class="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">{{ other.title }}</a>
+        <li v-for="related in relatedPosts" :key="related.slug">
+          <a :href="`/blog/${related.slug}`" class="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">{{ related.title }}</a>
         </li>
       </ul>
     </section>

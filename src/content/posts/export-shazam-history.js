@@ -6,6 +6,7 @@ export default {
   date: '2026-11-11',
   checked: '2026-11-11',
   readingMinutes: 5,
+  related: ['export-youtube-music-history-google-takeout', 'export-youtube-music-playlists-liked-songs', 'apple-music-listening-history'],
   html: `
 <p>Shazam keeps every song you identify, but the way to get that list out has changed. The route most guides still describe (sign in at shazam.com/myshazam on a computer and click a CSV download) no longer works. Here is what does work as of November 2026, using only official Apple and Shazam options.</p>
 

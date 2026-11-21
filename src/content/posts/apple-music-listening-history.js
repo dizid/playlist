@@ -6,6 +6,7 @@ export default {
   date: '2026-11-14',
   checked: '2026-11-12',
   readingMinutes: 5,
+  related: ['spotify-wrapped-2026-date-stats', 'export-shazam-history', 'spotify-listening-history'],
   html: `
 <p>Apple Music doesn't have a simple "everything I've ever played" page. What it has is Replay, a set of yearly and monthly stats built from your listening history, plus Apple's privacy page, where you can ask for a copy of the data Apple keeps. This guide covers both, the setting that has to be on for any of it to work, and how to keep a play history of your own. Checked against Apple's support and privacy pages as of November 2026.</p>
 

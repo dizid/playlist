@@ -6,6 +6,7 @@ export default {
   date: '2026-11-12',
   checked: '2026-11-12',
   readingMinutes: 5,
+  related: ['youtube-music-listening-history-stats', 'export-youtube-music-playlists-liked-songs', 'lastfm-vs-listenbrainz'],
   html: `
 <p>YouTube Music builds several playlists for you without being asked. Some are documented on Google's help pages today, others were announced in old blog posts and are harder to confirm. This guide sticks to what the current help pages say, so it is shorter than many lists you will find online. Everything below is as of November 2026.</p>
 

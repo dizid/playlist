@@ -18,7 +18,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = join(root, 'dist')
-const { render, BLOG_POSTS } = await import(pathToFileURL(join(root, 'dist-ssr', 'entry-server.js')).href)
+const { render, BLOG_POSTS, relatedPostsFor } = await import(pathToFileURL(join(root, 'dist-ssr', 'entry-server.js')).href)
 
 const SITE_URL = 'https://tunecraft.music'
 const APP_DIV = '<div id="app"></div>'
@@ -81,6 +81,37 @@ function checkBlogPost(post) {
   if (!post.sources?.length || post.sources.some((source) => !source.label || !source.url.startsWith('https://'))) {
     throw new Error(`prerender: ${where}: needs sources, each with a label and an https URL`)
   }
+  checkRelatedPosts(post, where)
+}
+
+/** Throws if a post's hand-picked "Related guides" list has an unknown slug, a duplicate, itself or more than 3. */
+function checkRelatedPosts(post, where) {
+  if (post.related === undefined) return
+  if (!Array.isArray(post.related) || post.related.length === 0 || post.related.length > 3) {
+    throw new Error(`prerender: ${where}: related must list 1-3 post slugs`)
+  }
+  if (new Set(post.related).size !== post.related.length) throw new Error(`prerender: ${where}: related has a duplicate`)
+  for (const slug of post.related) {
+    if (slug === post.slug) throw new Error(`prerender: ${where}: related lists the post itself`)
+    if (!BLOG_POSTS.some((other) => other.slug === slug)) throw new Error(`prerender: ${where}: related slug "${slug}" is not a post`)
+  }
+}
+
+/**
+ * Throws if a guide has no link from any other guide (in its text or its "Related guides"
+ * box), so readers and search engines can't reach it except via the /blog list.
+ * Fix: add its slug to the `related` list of 1-3 related posts.
+ */
+function checkEveryPostLinked() {
+  const linked = new Set()
+  for (const post of BLOG_POSTS) {
+    for (const [, slug] of post.html.matchAll(/href="\/blog\/([a-z0-9-]+)"/g)) if (slug !== post.slug) linked.add(slug)
+    for (const related of relatedPostsFor(post)) linked.add(related.slug)
+  }
+  const orphans = BLOG_POSTS.filter((post) => !linked.has(post.slug)).map((post) => post.slug)
+  if (BLOG_POSTS.length > 1 && orphans.length) {
+    throw new Error(`prerender: no other guide links to ${orphans.join(', ')}; add it to the related list of 1-3 posts`)
+  }
 }
 
 /** BlogPosting structured data for one post. */
@@ -112,6 +143,7 @@ for (const post of BLOG_POSTS) {
   if (!sitemap.includes(`<loc>${url}</loc>`)) throw new Error(`prerender: blog post "${post.slug}" is missing from public/sitemap.xml`)
   if (!llmsTxt.includes(`(${url})`)) throw new Error(`prerender: blog post "${post.slug}" is missing from public/llms.txt`)
 }
+checkEveryPostLinked()
 
 PAGES.push(
   {

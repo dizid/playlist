@@ -6,6 +6,7 @@ export default {
   date: '2026-11-14',
   checked: '2026-11-12',
   readingMinutes: 5,
+  related: ['apple-music-listening-history', 'youtube-music-listening-history-stats', 'spotify-listening-history'],
   html: `
 <p>Spotify had not announced a date for Wrapped 2026 when we checked on 12 November 2026. What we do know: when the last three editions came out, which plays Spotify counts, and where you can see your numbers right now, without waiting. This guide covers all three, using Spotify's own help pages and news reports from launch day.</p>
 

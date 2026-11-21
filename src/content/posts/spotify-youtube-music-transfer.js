@@ -6,6 +6,7 @@ export default {
   date: '2026-11-12',
   checked: '2026-11-12',
   readingMinutes: 6,
+  related: ['export-youtube-music-playlists-liked-songs', 'spotify-listening-history', 'youtube-music-smart-playlists-mixes'],
   html: `
 <p>Switching music apps used to mean a third-party tool. In 2026 both big apps have a built-in way in: YouTube Music can pull playlists from another service, and Spotify can do the same in the other direction. Google also has its own tool to copy YouTube Music playlists out to Apple Music. All three move playlists. None of them moves your listening history. This guide covers the exact steps, what each tool leaves behind, and how to keep the history too. Steps checked against each company's own help pages as of November 2026.</p>
 
@@ -74,7 +75,7 @@ export default {
     { label: 'Google Account Help: Copy your playlists to a service outside of YouTube Music', url: 'https://support.google.com/accounts/answer/14792019?hl=en' },
     { label: 'Spotify Support: Importing your playlists to Spotify', url: 'https://support.spotify.com/us/article/importing-your-playlists-to-spotify/' },
     { label: 'Spotify Newsroom (20 Nov 2025): 5 ways to get more out of your playlists (import via TuneMyMusic)', url: 'https://newsroom.spotify.com/2025-11-20/spotify-playlists-guide-transfer/' },
-    { label: 'Spotify Support: Understanding your data (Account data vs Extended streaming history)', url: 'https://support.spotify.com/us/article/understanding-my-data/' },
+    { label: 'Spotify Support: Understanding your data (Account data vs Extended streaming history)', url: 'https://support.spotify.com/us/article/understanding-your-data/' },
     { label: 'Spotify Support: Data rights and privacy choices (Download your data)', url: 'https://support.spotify.com/us/article/data-rights-and-privacy-settings/' },
     { label: 'MetaBrainz Blog (30 Aug 2025): GSoC 2025, importing listening history files in ListenBrainz', url: 'https://blog.metabrainz.org/2025/08/30/gsoc-2025-importing-listening-history-files-in-listenbrainz/' },
   ],

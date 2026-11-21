@@ -6,6 +6,7 @@ export default {
   date: '2026-11-11',
   checked: '2026-11-11',
   readingMinutes: 6,
+  related: ['youtube-music-listening-history-stats', 'export-youtube-music-playlists-liked-songs', 'lastfm-vs-listenbrainz'],
   html: `
 <p>Google Takeout is the official way to download a copy of your YouTube watch history. Because YouTube Music uses the same history, the songs you played there come along in the same file. This guide covers the exact steps, the one format choice that matters, and what the file does and doesn't contain. Steps checked as of November 2026.</p>
 

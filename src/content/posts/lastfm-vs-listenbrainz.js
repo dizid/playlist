@@ -6,6 +6,7 @@ export default {
   date: '2026-11-11',
   checked: '2026-11-11',
   readingMinutes: 6,
+  related: ['spotify-listening-history', 'apple-music-listening-history', 'export-youtube-music-history-google-takeout'],
   html: `
 <p>If you want a lasting record of what you listen to, two services do the job: Last.fm, the long-running scrobbling site, and ListenBrainz, the open-data alternative from the people behind MusicBrainz. Both are free to start, both work with Spotify, and neither has official YouTube Music support. The real differences are in who runs them, what you can get back out, and how public your data is. Everything below is as of November 2026.</p>
 
@@ -78,7 +79,7 @@ export default {
     { label: 'Last.fm Support FAQ: Spotify has stopped scrobbling', url: 'https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184' },
     { label: 'Last.fm Support FAQ: YouTube and YouTube Music Scrobbling', url: 'https://support.last.fm/t/youtube-and-youtube-music-scrobbling/173' },
     { label: 'Last.fm Support Community: How do I get a copy of all my data?', url: 'https://support.last.fm/t/how-do-i-get-a-copy-of-all-my-data/116705' },
-    { label: 'Spotify Community FAQ: How can I connect Spotify to Last.fm?', url: 'https://community.spotify.com/t5/FAQs/How-can-I-connect-Spotify-to-Last-fm/ta-p/4795301' },
+    { label: 'Spotify Community FAQ: How can I connect Spotify to Last.fm?', url: 'https://community.spotify.com/forum/en/kb/articles/881-how-can-i-connect-spotify-to-last-fm' },
     { label: 'ListenBrainz: Adding your data', url: 'https://listenbrainz.org/add-data/' },
     { label: 'ListenBrainz documentation: introduction', url: 'https://listenbrainz.readthedocs.io/en/latest/' },
     { label: 'ListenBrainz documentation: user history exports', url: 'https://listenbrainz.readthedocs.io/en/latest/users/api/export.html' },
