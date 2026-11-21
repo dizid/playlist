@@ -3,7 +3,9 @@ import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 import { searchYouTubeVideo } from './_shared/youtube'
 import { placeholderYouTubeId } from './_shared/placeholder-id'
-import { isValidUuid } from './_shared/validation'
+import {
+  isValidUuid, isValidYouTubeId, checkRequiredText, checkOptionalText, checkOptionalStringList, LIMITS
+} from './_shared/validation'
 
 export default async (req: Request, context: Context) => {
   // Validate session
@@ -109,11 +111,30 @@ export default async (req: Request, context: Context) => {
 
     // POST /api/songs - Add or update a song
     if (req.method === 'POST') {
-      const body = await req.json()
+      const body = await req.json().catch(() => null)
+      if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        return errorResponse('Request body must be an object', 400)
+      }
 
       // Only title is required
       if (!body.title) {
         return errorResponse('Missing required field: title', 400)
+      }
+
+      // Types and lengths (T-0636): anything up to Netlify's 6 MB body limit used
+      // to be stored; wrong types or a too-long video id gave a 500
+      const fieldError =
+        checkRequiredText(body.title, 'title', LIMITS.songTitle) ||
+        checkOptionalText(body.artist, 'artist', LIMITS.songArtist) ||
+        checkOptionalText(body.channel, 'channel', LIMITS.songChannel) ||
+        checkOptionalText(body.thumbnail, 'thumbnail', LIMITS.songThumbnail) ||
+        checkOptionalText(body.source, 'source', LIMITS.songSource) ||
+        (body.youtubeId && !isValidYouTubeId(body.youtubeId) ? 'Invalid youtubeId' : null) ||
+        (body.duration != null && body.duration !== '' &&
+          !(Number.isInteger(body.duration) && body.duration >= 0 && body.duration <= 2147483647)
+          ? 'duration must be a whole number of seconds' : null)
+      if (fieldError) {
+        return errorResponse(fieldError, 400)
       }
 
       // For Shazam/non-YouTube imports, search YouTube for best match
@@ -182,7 +203,18 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Invalid song ID format', 400)
       }
 
-      const body = await req.json()
+      const body = await req.json().catch(() => null)
+      if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        return errorResponse('Request body must be an object', 400)
+      }
+
+      // Tags must be short text lists (a string or object here used to give a 500)
+      const tagError =
+        checkOptionalStringList(body.genres, 'genres', LIMITS.tags, LIMITS.tagLength) ||
+        checkOptionalStringList(body.moods, 'moods', LIMITS.tags, LIMITS.tagLength)
+      if (tagError) {
+        return errorResponse(tagError, 400)
+      }
 
       // Handle play count increment
       if (body.incrementPlayCount) {

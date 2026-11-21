@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
-import { isValidUuid } from './_shared/validation'
+import { isValidUuid, isImportType } from './_shared/validation'
 
 // Max songs per import batch (to keep payload reasonable)
 const MAX_BATCH_SIZE = 5000
@@ -21,11 +21,19 @@ export default async (req: Request, context: Context) => {
 
     // POST /api/import/batch - Create import job and trigger background processing
     if (req.method === 'POST' && url.pathname === '/api/import/batch') {
-      const body = await req.json()
+      const body = await req.json().catch(() => null)
+      if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        return errorResponse('Request body must be an object', 400)
+      }
 
       // Validate required fields
       if (!body.type) {
         return errorResponse('Missing required field: type', 400)
+      }
+      // Only the 4 import types the Import page sends: the type is shown in the
+      // completion email and push message (T-0636)
+      if (!isImportType(body.type)) {
+        return errorResponse('Unknown import type', 400)
       }
       if (!body.songs || !Array.isArray(body.songs)) {
         return errorResponse('Missing required field: songs (array)', 400)
@@ -57,6 +65,16 @@ export default async (req: Request, context: Context) => {
         }, 409)
       }
 
+      // Completion email: only to the signed-in account's own address, and only
+      // when the sign-in provider verified it. An account with someone else's
+      // unverified address could otherwise make TuneCraft mail that person (T-0636).
+      const notifyAddress = (
+        session.user.emailVerified &&
+        session.user.email &&
+        typeof body.email === 'string' &&
+        body.email.trim().toLowerCase() === session.user.email.toLowerCase()
+      ) ? session.user.email : null
+
       // Create import job
       const result = await sql`
         INSERT INTO import_jobs (
@@ -75,7 +93,7 @@ export default async (req: Request, context: Context) => {
           'pending',
           ${body.notifyEmail !== false},
           ${body.notifyPush !== false},
-          ${(typeof body.email === 'string' && body.email.trim().toLowerCase() === (session.user.email || '').toLowerCase()) ? session.user.email : null},
+          ${notifyAddress},
           ${JSON.stringify(body.songs)}::jsonb
         )
         RETURNING id, status, total_items, created_at

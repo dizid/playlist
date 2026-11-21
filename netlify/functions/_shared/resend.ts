@@ -1,6 +1,7 @@
 // Resend email integration for import notifications
 import { Resend } from 'resend'
 import { config } from 'dotenv'
+import { escapeHtml } from './validation'
 
 // Load .env file for local development
 config()
@@ -48,7 +49,10 @@ export async function sendImportCompletionEmail(data: ImportCompletionEmail): Pr
     takeout: 'Google Takeout'
   }
 
-  const importLabel = importTypeLabels[data.importType] || data.importType
+  // Escaped: the type comes from the request (import.mts only accepts the 4 known
+  // types since T-0636; this keeps older or odd job rows from adding HTML)
+  const importLabel = escapeHtml(importTypeLabels[data.importType] || data.importType)
+  const userName = data.userName ? escapeHtml(data.userName) : ''
 
   try {
     await resend.emails.send({
@@ -67,7 +71,7 @@ export async function sendImportCompletionEmail(data: ImportCompletionEmail): Pr
     <h1 style="color: #818cf8; margin-bottom: 24px;">Import Complete!</h1>
 
     <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
-      Hi${data.userName ? ` ${data.userName}` : ''},
+      Hi${userName ? ` ${userName}` : ''},
     </p>
 
     <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">

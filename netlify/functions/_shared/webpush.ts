@@ -1,6 +1,7 @@
 // Web Push integration for browser notifications
 import webpush from 'web-push'
 import { config } from 'dotenv'
+import { isAllowedPushEndpoint } from './validation'
 
 // Load .env file for local development
 config()
@@ -67,6 +68,14 @@ export async function sendPushNotification(
   payload: PushNotificationPayload
 ): Promise<boolean> {
   if (!ensureVapidConfigured()) {
+    return false
+  }
+
+  // Never POST to anything but a browser push service, also for rows stored
+  // before the subscribe endpoint checked this (T-0636). Returning false makes
+  // the caller delete the row like an expired subscription.
+  if (!isAllowedPushEndpoint(subscription.endpoint)) {
+    console.warn('Push subscription skipped: endpoint is not a known push service')
     return false
   }
 

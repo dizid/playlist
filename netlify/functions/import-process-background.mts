@@ -6,6 +6,7 @@ import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
 import { searchYouTubeVideo, youtubeQuotaExceeded } from './_shared/youtube'
 import { placeholderYouTubeId } from './_shared/placeholder-id'
+import { isValidUuid } from './_shared/validation'
 import { sendImportCompletionEmail } from './_shared/resend'
 import { sendPushNotificationToMany, createImportCompletionPayload, type PushSubscription } from './_shared/webpush'
 
@@ -64,11 +65,14 @@ export default async (req: Request, context: Context) => {
 
   try {
     const body = await req.json()
-    jobId = body.jobId
 
-    if (!jobId) {
+    if (!body?.jobId) {
       return errorResponse('Missing jobId', 400)
     }
+    if (typeof body.jobId !== 'string' || !isValidUuid(body.jobId)) {
+      return errorResponse('Invalid jobId', 400)
+    }
+    jobId = body.jobId
 
     // Get the job
     const jobs = await sql`
@@ -86,12 +90,19 @@ export default async (req: Request, context: Context) => {
       return jsonResponse({ message: 'Job already processed or processing', status: job.status })
     }
 
-    // Mark job as processing
-    await sql`
+    // Claim the job atomically: only the request that moves it from 'pending' to
+    // 'processing' runs it. Two calls at once (the background URL can be called
+    // directly with the user's token) used to both pass the check above and
+    // import every song twice, using double YouTube quota (T-0636).
+    const claimed = await sql`
       UPDATE import_jobs
       SET status = 'processing', started_at = NOW()
-      WHERE id = ${jobId}::uuid
+      WHERE id = ${jobId}::uuid AND user_id = ${userId} AND status = 'pending'
+      RETURNING id
     `
+    if (claimed.length === 0) {
+      return jsonResponse({ message: 'Job already processed or processing' })
+    }
 
     const songs: SongPayload[] = job.payload as SongPayload[]
     let processedItems = 0

@@ -7,6 +7,9 @@ export interface Session {
   user: {
     id: string
     email: string
+    // True only when Firebase says the provider verified this address. Only a
+    // verified address may receive mail from TuneCraft (T-0636).
+    emailVerified: boolean
     name?: string
     image?: string
   }
@@ -70,6 +73,7 @@ export async function validateSession(req: Request): Promise<Session | null> {
       user: {
         id: decoded.uid,
         email: decoded.email || '',
+        emailVerified: decoded.email_verified === true,
         name: decoded.name || '',
         image: decoded.picture || ''
       },

@@ -1,7 +1,11 @@
 import type { Context, Config } from "@netlify/functions"
 import { getDb } from './_shared/db'
 import { validateSession, unauthorizedResponse, jsonResponse, errorResponse } from './_shared/auth'
-import { isValidUuid } from './_shared/validation'
+import {
+  isValidUuid, checkRequiredText, checkOptionalSongIds, checkOptionalRules, LIMITS
+} from './_shared/validation'
+
+const PLAYLIST_TYPES = ['smart', 'manual']
 
 export default async (req: Request, context: Context) => {
   // Validate session
@@ -131,10 +135,25 @@ export default async (req: Request, context: Context) => {
 
     // POST /api/playlists - Create a new playlist
     if (req.method === 'POST') {
-      const body = await req.json()
+      const body = await req.json().catch(() => null)
+      if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        return errorResponse('Request body must be an object', 400)
+      }
 
       if (!body.name) {
         return errorResponse('Missing required field: name', 400)
+      }
+
+      // Types and sizes (T-0636): name/rules/songIds had no checks (6 MB could be
+      // stored; a bad song id or type gave a 500)
+      const fieldError =
+        checkRequiredText(body.name, 'name', LIMITS.playlistName) ||
+        (body.type !== undefined && body.type !== null && !PLAYLIST_TYPES.includes(body.type)
+          ? 'type must be smart or manual' : null) ||
+        checkOptionalRules(body.rules) ||
+        checkOptionalSongIds(body.songIds)
+      if (fieldError) {
+        return errorResponse(fieldError, 400)
       }
 
       const result = await sql`
@@ -165,7 +184,18 @@ export default async (req: Request, context: Context) => {
         return errorResponse('Invalid playlist ID format', 400)
       }
 
-      const body = await req.json()
+      const body = await req.json().catch(() => null)
+      if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        return errorResponse('Request body must be an object', 400)
+      }
+
+      const fieldError =
+        (body.name !== undefined ? checkRequiredText(body.name, 'name', LIMITS.playlistName) : null) ||
+        checkOptionalRules(body.rules) ||
+        checkOptionalSongIds(body.songIds)
+      if (fieldError) {
+        return errorResponse(fieldError, 400)
+      }
 
       if (body.name !== undefined) {
         await sql`
