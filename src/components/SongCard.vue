@@ -91,7 +91,7 @@ async function logPlayEvent() {
         <button
           @click="showTagEditor = true"
           :aria-label="(song.genres?.length || song.moods?.length ? 'Edit tags for ' : 'Add tags to ') + song.title"
-          class="text-indigo-400 hover:text-indigo-300"
+          class="py-1 -my-1 text-indigo-400 hover:text-indigo-300"
         >
           {{ song.genres?.length || song.moods?.length ? 'edit tags' : '+ add tags' }}
         </button>

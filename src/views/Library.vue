@@ -130,7 +130,7 @@ const filteredSongs = computed(() => {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8" role="main">
+  <div class="p-6 lg:p-8">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
@@ -204,7 +204,7 @@ const filteredSongs = computed(() => {
     >
       <!-- Genres -->
       <div v-if="library.availableGenres.length">
-        <h3 class="text-sm font-medium text-zinc-400 mb-2">Genres</h3>
+        <h2 class="text-sm font-medium text-zinc-400 mb-2">Genres</h2>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="genre in library.availableGenres"
@@ -223,7 +223,7 @@ const filteredSongs = computed(() => {
 
       <!-- Moods -->
       <div v-if="library.availableMoods.length">
-        <h3 class="text-sm font-medium text-zinc-400 mb-2">Moods</h3>
+        <h2 class="text-sm font-medium text-zinc-400 mb-2">Moods</h2>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="mood in library.availableMoods"
@@ -269,7 +269,7 @@ const filteredSongs = computed(() => {
       class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
       role="alert"
     >
-      <h3 class="text-xl font-semibold text-white mb-2">Couldn't load your music</h3>
+      <h2 class="text-xl font-semibold text-white mb-2">Couldn't load your music</h2>
       <p class="text-zinc-400 mb-4">Something went wrong on our side. Your library is safe.</p>
       <button
         type="button"
@@ -286,9 +286,9 @@ const filteredSongs = computed(() => {
       class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
     >
       <span class="text-5xl mb-4 block">🔍</span>
-      <h3 class="text-xl font-semibold text-white mb-2">
+      <h2 class="text-xl font-semibold text-white mb-2">
         {{ searchQuery || activeFilterCount > 0 ? 'No songs found' : 'Your library is empty' }}
-      </h3>
+      </h2>
       <p class="text-zinc-400">
         {{ searchQuery || activeFilterCount > 0 ? 'Try adjusting your search or filters' : 'Import some music to get started' }}
       </p>

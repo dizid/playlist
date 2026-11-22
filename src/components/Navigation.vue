@@ -169,6 +169,7 @@ onUnmounted(() => {
       role="dialog"
       aria-label="Navigation menu"
       :aria-hidden="!isDrawerOpen"
+      :inert="!isDrawerOpen"
       class="fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 transform transition-transform duration-200 ease-in-out lg:hidden"
       :class="isDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
     >

@@ -116,12 +116,12 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8" role="main">
+  <div class="p-6 lg:p-8">
     <h1 class="text-2xl font-bold text-white mb-6">Settings</h1>
 
     <!-- Account -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-      <h3 class="font-semibold text-white mb-4">Account</h3>
+      <h2 class="font-semibold text-white mb-4">Account</h2>
       <div class="flex items-center gap-4">
         <img
           v-if="auth.userPicture"
@@ -129,16 +129,16 @@ async function confirmDelete() {
           :alt="auth.userName"
           class="w-16 h-16 rounded-full"
         />
-        <div>
-          <p class="font-medium text-white">{{ auth.userName }}</p>
-          <p class="text-sm text-zinc-500">{{ auth.userEmail }}</p>
+        <div class="min-w-0">
+          <p class="font-medium text-white break-words">{{ auth.userName }}</p>
+          <p class="text-sm text-zinc-500 break-all">{{ auth.userEmail }}</p>
         </div>
       </div>
     </div>
 
     <!-- Connected Services -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-      <h3 class="font-semibold text-white mb-4">Connected Services</h3>
+      <h2 class="font-semibold text-white mb-4">Connected Services</h2>
       <div class="space-y-3">
         <div class="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
           <div class="flex items-center gap-3">
@@ -151,14 +151,14 @@ async function confirmDelete() {
             <button
               v-if="auth.hasYouTubeAccess"
               @click="auth.disconnectYouTube()"
-              class="text-sm text-zinc-400 hover:text-red-400 transition-colors"
+              class="py-1 -my-1 text-sm text-zinc-400 hover:text-red-400 transition-colors"
             >
               Disconnect
             </button>
             <button
               v-if="!auth.isYouTubeTokenValid"
               @click="auth.connectYouTube()"
-              class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+              class="py-1 -my-1 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
             >
               {{ auth.hasYouTubeAccess ? 'Reconnect' : 'Connect' }}
             </button>
@@ -183,7 +183,7 @@ async function confirmDelete() {
 
     <!-- Notifications -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-      <h3 class="font-semibold text-white mb-4">Notifications</h3>
+      <h2 class="font-semibold text-white mb-4">Notifications</h2>
       <div class="space-y-3">
         <!-- Push notifications toggle -->
         <div class="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
@@ -217,7 +217,7 @@ async function confirmDelete() {
 
     <!-- Data -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-      <h3 class="font-semibold text-white mb-4">Data</h3>
+      <h2 class="font-semibold text-white mb-4">Data</h2>
       <div class="space-y-3">
         <button
           @click="exportLibrary"
@@ -259,7 +259,7 @@ async function confirmDelete() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h3 class="text-xl font-bold text-white mb-4">Delete All Data</h3>
+        <h2 class="text-xl font-bold text-white mb-4">Delete All Data</h2>
 
         <p class="text-zinc-400 mb-4">
           This will permanently delete all your data:

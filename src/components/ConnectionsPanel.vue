@@ -150,7 +150,8 @@ function timeAgo(timestamp) {
   if (minutes < 60) return `${minutes} min ago`
   const hours = Math.round(minutes / 60)
   if (hours < 24) return `${hours} h ago`
-  return `${Math.round(hours / 24)} days ago`
+  const days = Math.round(hours / 24)
+  return days === 1 ? '1 day ago' : `${days} days ago`
 }
 
 const formatNumber = (value) => Number(value || 0).toLocaleString()
@@ -166,7 +167,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
 
     <div v-if="isLoading" class="text-sm text-zinc-500" aria-live="polite">Loading connections...</div>
 
-    <div v-else class="grid gap-4 md:grid-cols-2">
+    <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div
         v-for="service in SERVICES"
         :key="service.id"
@@ -188,7 +189,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
             :href="service.profileUrl(connections[service.id].external_username)"
             target="_blank"
             rel="noopener"
-            class="text-sm text-indigo-400 hover:text-indigo-300"
+            class="inline-block py-1 -my-1 text-sm text-indigo-400 hover:text-indigo-300 break-all"
           >@{{ connections[service.id].external_username }}</a>
 
           <p class="text-sm text-zinc-400 mt-2">
@@ -285,7 +286,7 @@ const formatNumber = (value) => Number(value || 0).toLocaleString()
           <p v-if="errors[service.id]" class="text-sm text-red-400 mt-2" role="alert">{{ errors[service.id] }}</p>
 
           <details class="mt-3 text-sm">
-            <summary class="text-zinc-400 cursor-pointer hover:text-white">How do my plays get into {{ service.name }}?</summary>
+            <summary class="py-1 -my-1 text-zinc-400 cursor-pointer hover:text-white">How do my plays get into {{ service.name }}?</summary>
             <ul class="mt-2 space-y-1 text-zinc-500">
               <li v-for="tip in service.help" :key="tip.label">
                 <span class="text-zinc-300">{{ tip.label }}:</span>

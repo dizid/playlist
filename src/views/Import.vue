@@ -628,7 +628,7 @@ function dismissActiveJob() {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8" role="main">
+  <div class="p-6 lg:p-8">
     <h1 class="text-2xl font-bold text-white mb-6">Import Music</h1>
 
     <!-- Automatic sync (Last.fm / ListenBrainz) above the one-off file imports -->
@@ -761,12 +761,14 @@ function dismissActiveJob() {
 
         <!-- Email -->
         <div class="flex items-center gap-3">
-          <span>📧</span>
+          <span aria-hidden="true">📧</span>
           <input
             v-model="notifyEmail"
             type="email"
+            autocomplete="email"
+            aria-label="Email for the import-done message (optional)"
             placeholder="Email (optional)"
-            class="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 text-sm"
+            class="flex-1 min-w-0 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 text-sm"
           />
         </div>
         <p class="text-xs text-zinc-500 pl-7">Check your spam folder if you don't see the email</p>
@@ -774,7 +776,7 @@ function dismissActiveJob() {
     </div>
 
     <!-- Tabs -->
-    <div class="flex gap-2 mb-6 border-b border-zinc-800 pb-4">
+    <div class="flex flex-wrap gap-2 mb-6 border-b border-zinc-800 pb-4">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -786,7 +788,7 @@ function dismissActiveJob() {
           : 'bg-zinc-800 text-zinc-400 hover:text-white'"
         class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
       >
-        <span>{{ tab.icon }}</span>
+        <span aria-hidden="true">{{ tab.icon }}</span>
         {{ tab.label }}
       </button>
     </div>

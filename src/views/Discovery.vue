@@ -97,7 +97,7 @@ function clearFilters() {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8" role="main">
+  <div class="p-6 lg:p-8">
     <h1 class="text-2xl font-bold text-white mb-2">Discover</h1>
     <p class="text-zinc-400 mb-6">Filter your library by genre and mood</p>
 
@@ -125,7 +125,7 @@ function clearFilters() {
     <!-- Filters -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-semibold text-white">Filter by taste</h3>
+        <h2 class="font-semibold text-white">Filter by taste</h2>
         <span class="text-sm text-zinc-500">
           {{ taggedSongsCount }} / {{ library.songCount }} songs tagged
         </span>
@@ -133,8 +133,9 @@ function clearFilters() {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm text-zinc-400 mb-2">Genre</label>
+          <label for="discover-genre" class="block text-sm text-zinc-400 mb-2">Genre</label>
           <select
+            id="discover-genre"
             v-model="selectedGenre"
             class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-indigo-500 focus:outline-none"
           >
@@ -144,8 +145,9 @@ function clearFilters() {
           </select>
         </div>
         <div>
-          <label class="block text-sm text-zinc-400 mb-2">Mood</label>
+          <label for="discover-mood" class="block text-sm text-zinc-400 mb-2">Mood</label>
           <select
+            id="discover-mood"
             v-model="selectedMood"
             class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-indigo-500 focus:outline-none"
           >
@@ -177,7 +179,7 @@ function clearFilters() {
       class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
     >
       <span class="text-5xl mb-4 block">📭</span>
-      <h3 class="text-xl font-semibold text-white mb-2">No songs yet</h3>
+      <h2 class="text-xl font-semibold text-white mb-2">No songs yet</h2>
       <p class="text-zinc-400 mb-4">Import some music first to discover by genre and mood</p>
       <router-link
         to="/import"
@@ -193,7 +195,7 @@ function clearFilters() {
       class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
     >
       <span class="text-5xl mb-4 block">🏷️</span>
-      <h3 class="text-xl font-semibold text-white mb-2">No songs tagged yet</h3>
+      <h2 class="text-xl font-semibold text-white mb-2">No songs tagged yet</h2>
       <p class="text-zinc-400 mb-4">
         Use "+ add tags" on any song in your Library to give it a genre and a mood, and it shows up here.
       </p>
@@ -211,7 +213,7 @@ function clearFilters() {
       class="text-center py-16 bg-zinc-900 border border-zinc-800 rounded-xl"
     >
       <span class="text-5xl mb-4 block">🔍</span>
-      <h3 class="text-xl font-semibold text-white mb-2">No songs match</h3>
+      <h2 class="text-xl font-semibold text-white mb-2">No songs match</h2>
       <p class="text-zinc-400">
         Try a different genre or mood combination
       </p>

@@ -23,7 +23,7 @@ onMounted(() => {
 
 <template>
   <article v-if="post" class="max-w-3xl mx-auto px-4 py-10 md:py-16">
-    <a href="/blog" class="text-sm text-indigo-400 hover:text-indigo-300">&larr; Guides</a>
+    <a href="/blog" class="inline-block py-1 -my-1 text-sm text-indigo-400 hover:text-indigo-300">&larr; Guides</a>
     <h1 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3 leading-tight">{{ post.title }}</h1>
     <p class="text-sm text-zinc-500 mb-8">
       <time :datetime="post.date">{{ formatPostDate(post.date) }}</time> · {{ post.readingMinutes }} min read ·

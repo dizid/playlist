@@ -19,3 +19,28 @@ body {
 #app {
   @apply min-h-screen;
 }
+
+/* iPhone Safari zooms the whole page in when a text field under 16px gets focus, and it stays
+   zoomed after typing. On touch screens the small typing fields get 16px text. Plain CSS (no
+   layer) so it wins over the text-sm utility. (T-0636) */
+@media (pointer: coarse) {
+  input:is(.text-xs, .text-sm),
+  textarea:is(.text-xs, .text-sm),
+  select:is(.text-xs, .text-sm) {
+    font-size: 16px;
+  }
+}
+
+/* "Reduce motion" setting on the phone/computer: no rise-in, slide or pulse animations
+   (landing page reveal, loading skeletons, phone menu slide). (T-0636) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

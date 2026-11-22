@@ -6,7 +6,7 @@ import { BLOG_POSTS, formatPostDate } from '../content/posts'
 
 <template>
   <div class="max-w-3xl mx-auto px-4 py-10 md:py-16">
-    <router-link to="/" class="text-sm text-indigo-400 hover:text-indigo-300">&larr; TuneCraft</router-link>
+    <router-link to="/" class="inline-block py-1 -my-1 text-sm text-indigo-400 hover:text-indigo-300">&larr; TuneCraft</router-link>
     <h1 class="text-3xl font-bold text-white mt-4 mb-2">TuneCraft guides</h1>
     <p class="text-zinc-400 mb-8 leading-relaxed">
       How to get your own listening history out of YouTube, Shazam and scrobbling services, and what to do with it.

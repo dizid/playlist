@@ -76,7 +76,7 @@ const quickActions = computed(() => {
 </script>
 
 <template>
-  <div class="p-6 lg:p-8" role="main">
+  <div class="p-6 lg:p-8">
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-2xl font-bold text-white">
@@ -190,7 +190,7 @@ const quickActions = computed(() => {
       <div v-if="playlistPreviews.length > 0" class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-white">Your Playlists</h2>
-          <router-link to="/library" class="text-sm text-indigo-400 hover:text-indigo-300">
+          <router-link to="/library" class="py-1 -my-1 text-sm text-indigo-400 hover:text-indigo-300">
             View all
           </router-link>
         </div>
@@ -230,7 +230,7 @@ const quickActions = computed(() => {
                 <strong class="text-white">{{ songsNeedingGenres }}</strong> songs need genre tags
               </span>
             </div>
-            <router-link to="/discover" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <router-link to="/discover" class="p-2 -m-2 text-xs text-indigo-400 hover:text-indigo-300">
               Fix
             </router-link>
           </div>
@@ -244,7 +244,7 @@ const quickActions = computed(() => {
                 <strong class="text-white">{{ songsWithoutYouTube }}</strong> songs have no YouTube link
               </span>
             </div>
-            <router-link to="/library" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <router-link to="/library" class="p-2 -m-2 text-xs text-indigo-400 hover:text-indigo-300">
               Review
             </router-link>
           </div>
@@ -258,7 +258,7 @@ const quickActions = computed(() => {
                 <strong class="text-white">{{ pendingEnrichment }}</strong> songs ready to enrich
               </span>
             </div>
-            <router-link to="/discover" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <router-link to="/discover" class="p-2 -m-2 text-xs text-indigo-400 hover:text-indigo-300">
               Enrich
             </router-link>
           </div>
@@ -269,7 +269,7 @@ const quickActions = computed(() => {
       <div v-if="library.topSongs.length > 0">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-white">Your Top Songs</h2>
-          <router-link to="/library" class="text-sm text-indigo-400 hover:text-indigo-300">
+          <router-link to="/library" class="py-1 -my-1 text-sm text-indigo-400 hover:text-indigo-300">
             View all
           </router-link>
         </div>

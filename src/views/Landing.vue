@@ -223,7 +223,7 @@ onMounted(async () => {
     </div>
 
     <!-- Features -->
-    <div class="border-t border-zinc-800 py-16 md:py-20 px-4" role="main">
+    <div class="border-t border-zinc-800 py-16 md:py-20 px-4">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-12 animate-fade-in-up animation-delay-1">
           Everything you need
