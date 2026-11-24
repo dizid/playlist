@@ -90,8 +90,8 @@ const quickActions = computed(() => {
       <!-- Skeleton stats -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div v-for="i in 4" :key="i" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 animate-pulse">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-zinc-800 rounded-lg"></div>
+          <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <div class="w-10 h-10 shrink-0 bg-zinc-800 rounded-lg"></div>
             <div class="space-y-2">
               <div class="h-6 w-12 bg-zinc-800 rounded"></div>
               <div class="h-3 w-16 bg-zinc-800 rounded"></div>
@@ -119,8 +119,10 @@ const quickActions = computed(() => {
           :key="stat.label"
           class="bg-zinc-900 border border-zinc-800 rounded-xl p-4"
         >
-          <div class="flex items-center gap-3">
-            <div :class="['w-10 h-10 rounded-lg flex items-center justify-center bg-zinc-800', stat.color]">
+          <!-- Phones (under 640 px): icon above the number. Side by side, a card had ~40-60 px for
+               the number, so "333/333" stuck out of the card and the icon got squeezed. (T-0636) -->
+          <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <div :class="['w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-zinc-800', stat.color]">
               <!-- Music note icon for Songs -->
               <svg v-if="stat.label === 'Songs'" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 18V5l12-2v13"/>
@@ -145,8 +147,8 @@ const quickActions = computed(() => {
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
             </div>
-            <div>
-              <p class="text-2xl font-bold text-white">{{ stat.value }}</p>
+            <div class="min-w-0 max-w-full">
+              <p class="text-2xl font-bold text-white wrap-anywhere">{{ stat.value }}</p>
               <p class="text-xs text-zinc-500">{{ stat.label }}</p>
             </div>
           </div>

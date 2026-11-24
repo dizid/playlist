@@ -86,7 +86,7 @@ function cancel() {
     <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md">
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
-        <h3 id="tag-editor-title" class="text-lg font-semibold text-white">Edit Tags</h3>
+        <h2 id="tag-editor-title" class="text-lg font-semibold text-white">Edit Tags</h2>
         <button @click="cancel" aria-label="Close tag editor" class="text-zinc-500 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

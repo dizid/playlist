@@ -88,7 +88,7 @@ export default {
     { label: 'YouTube Help: View, delete, or turn on or off watch history', url: 'https://support.google.com/youtube/answer/95725?hl=en' },
     { label: 'YouTube Music Help: View, delete, or pause watch history', url: 'https://support.google.com/youtubemusic/answer/6364666?hl=en' },
     { label: 'Google Data Portability API: My Activity schema reference (HTML and JSON formats)', url: 'https://developers.google.com/data-portability/schema-reference/my_activity' },
-    { label: 'Making with Code (ISF Academy): Takeout steps incl. Multiple formats and History', url: 'https://the-isf-academy.github.io/making-with-code/cs9/unit01/project/data_collection/youtube' },
+    { label: 'Making with Code (ISF Academy): Takeout steps incl. Multiple formats and History', url: 'https://the-isf-academy.github.io/making-with-code/cs9/unit01/project/data_collection/youtube/' },
     { label: 'ytmusic_wrapped README: Takeout steps and " - Topic" artist names', url: 'https://github.com/cinfulsinamon/ytmusic_wrapped/blob/python3/README.md' },
     { label: 'Digital Takeout Day: How to export YouTube data (file paths and JSON fields)', url: 'https://takeoutday.org/guides/how-to-export-youtube-data' },
     { label: 'GitHub gist: YouTube Music watch history to ListenBrainz (HTML vs JSON reports, "Watched" prefix)', url: 'https://gist.github.com/fuddl/e17aa687df6ac1c7cbee5650ccfbc889' },

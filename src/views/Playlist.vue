@@ -124,9 +124,9 @@ function goBack() {
     <div v-else-if="playlist">
       <!-- Header -->
       <div class="flex items-start justify-between gap-4 mb-6">
-        <div>
+        <div class="min-w-0">
           <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-2xl font-bold text-white">{{ playlist.name }}</h1>
+            <h1 class="min-w-0 text-2xl font-bold text-white break-words">{{ playlist.name }}</h1>
             <span
               :class="[
                 'px-2 py-0.5 rounded text-xs font-medium',

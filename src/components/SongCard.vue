@@ -79,7 +79,9 @@ async function logPlayEvent() {
       <p class="text-sm text-zinc-500 truncate">
         {{ song.artist || song.channel }}
       </p>
-      <div class="flex items-center gap-3 mt-1 text-xs text-zinc-600">
+      <!-- flex-wrap: on a 320 px phone the plays/genres/"edit tags" line was wider than the card
+           (page scrolled sideways, the play button covered "edit tags"); now it wraps. (T-0636) -->
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-zinc-600">
         <span v-if="song.play_count">{{ song.play_count }} plays</span>
         <span v-if="song.popularity" class="text-indigo-400">🔥 {{ song.popularity }}%</span>
         <span v-if="song.genres?.length" class="text-zinc-500">

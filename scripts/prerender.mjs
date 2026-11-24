@@ -114,6 +114,15 @@ function checkEveryPostLinked() {
   }
 }
 
+/**
+ * The post's "modified" date for structured data and link previews: the later of its publish
+ * date and its facts-checked date. Some guides were checked before their publish date, and a
+ * modified date before the published date is invalid. (T-0636)
+ */
+function modifiedDate(post) {
+  return post.checked > post.date ? post.checked : post.date
+}
+
 /** BlogPosting structured data for one post. */
 function blogPostJsonLd(post) {
   const url = `${SITE_URL}/blog/${post.slug}`
@@ -123,13 +132,43 @@ function blogPostJsonLd(post) {
     headline: post.title,
     description: post.description,
     datePublished: post.date,
-    dateModified: post.checked,
+    dateModified: modifiedDate(post),
     url,
     mainEntityOfPage: url,
     inLanguage: 'en',
     author: { '@type': 'Person', name: 'Marc de Ruijter', url: 'https://dizid.com' },
     publisher: { '@type': 'Organization', name: 'TuneCraft', url: `${SITE_URL}/` },
   }
+}
+
+const BLOG_INDEX_DESCRIPTION = 'Step-by-step guides to getting your listening history out of YouTube, Shazam, Last.fm and ListenBrainz, checked against each service\'s own help pages.'
+
+/** Blog structured data for /blog: the guides blog plus every guide (in BLOG_POSTS order, as listed on the page). */
+function blogIndexJsonLd(posts) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'TuneCraft guides',
+    description: BLOG_INDEX_DESCRIPTION,
+    url: `${SITE_URL}/blog`,
+    inLanguage: 'en',
+    publisher: { '@type': 'Organization', name: 'TuneCraft', url: `${SITE_URL}/` },
+    blogPost: posts.map((post) => ({
+      '@type': 'BlogPosting',
+      headline: post.title,
+      url: `${SITE_URL}/blog/${post.slug}`,
+      datePublished: post.date,
+      dateModified: modifiedDate(post),
+    })),
+  }
+}
+
+/** WebSite structured data for the homepage only: tells search engines the site's name ("TuneCraft"). */
+const WEBSITE_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'TuneCraft',
+  url: `${SITE_URL}/`,
 }
 
 const sitemap = await readFile(join(root, 'public', 'sitemap.xml'), 'utf8')
@@ -151,14 +190,22 @@ PAGES.push(
     file: 'blog.html',
     head: {
       title: 'Guides: your music history, exported | TuneCraft',
-      description: 'Step-by-step guides to getting your listening history out of YouTube, Shazam, Last.fm and ListenBrainz, checked against each service\'s own help pages.',
+      description: BLOG_INDEX_DESCRIPTION,
+      jsonLd: blogIndexJsonLd(BLOG_POSTS),
     },
   },
   ...BLOG_POSTS.map((post) => ({
     path: `/blog/${post.slug}`,
     // <path>.html (not <path>/index.html) so Netlify serves it without a trailing-slash redirect
     file: `blog/${post.slug}.html`,
-    head: { title: `${post.title} | TuneCraft`, description: post.description, jsonLd: blogPostJsonLd(post), ogType: 'article' },
+    head: {
+      title: `${post.title} | TuneCraft`,
+      description: post.description,
+      jsonLd: blogPostJsonLd(post),
+      ogType: 'article',
+      // Link previews (LinkedIn, Facebook) read a guide as an article with its dates
+      article: { published: post.date, modified: modifiedDate(post) },
+    },
   })),
 )
 
@@ -178,8 +225,22 @@ function setTagValue(html, tagPattern, value, label) {
   return html.replace(tagPattern, (_match, before, after) => `${before}${escapeHtml(value)}${after}`)
 }
 
+/** Adds a JSON-LD <script> before </head>. "<" escaped so no value can close the script tag early. */
+function withJsonLd(html, jsonLd) {
+  const script = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`
+  return html.replace('</head>', () => `  ${script}\n</head>`)
+}
+
+/** article:published_time and article:modified_time (YYYY-MM-DD) right after og:type, for guides. */
+function withArticleMeta(html, { published, modified }) {
+  const dates = `<meta property="article:published_time" content="${escapeHtml(published)}">\n  <meta property="article:modified_time" content="${escapeHtml(modified)}">`
+  const ogType = /<meta property="og:type" content="article">/
+  if (!ogType.test(html)) throw new Error('prerender: og:type article not found for the article dates')
+  return html.replace(ogType, (tag) => `${tag}\n  ${dates}`)
+}
+
 /** The landing page's <head>, rewritten for another public page. */
-function headFor(html, path, { title, description, jsonLd, ogType }) {
+function headFor(html, path, { title, description, jsonLd, ogType, article }) {
   const url = `${SITE_URL}${path}`
   let page = setTagValue(html, /(<title>)[^<]*(<\/title>)/, title, 'title')
   if (ogType) page = setTagValue(page, /(<meta property="og:type" content=")[^"]*(")/, ogType, 'og:type')
@@ -190,11 +251,8 @@ function headFor(html, path, { title, description, jsonLd, ogType }) {
   page = setTagValue(page, /(<meta name="twitter:title" content=")[^"]*(")/, title, 'twitter:title')
   page = setTagValue(page, /(<meta name="twitter:description" content=")[^"]*(")/, description, 'twitter:description')
   page = setTagValue(page, /(<link rel="canonical" href=")[^"]*(")/, url, 'canonical')
-  if (jsonLd) {
-    // "<" escaped so no value can close the script tag early
-    const script = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`
-    page = page.replace('</head>', () => `  ${script}\n</head>`)
-  }
+  if (article) page = withArticleMeta(page, article)
+  if (jsonLd) page = withJsonLd(page, jsonLd)
   return page
 }
 
@@ -216,7 +274,8 @@ for (const { path, file, head } of PAGES) {
   if (!appHtml.includes('<h1')) {
     throw new Error(`prerender: ${path} rendered without an <h1>; refusing to ship it`)
   }
-  const pageTemplate = head ? headFor(template, path, head) : template
+  // The homepage keeps the template's head and gets the WebSite (site name) data
+  const pageTemplate = head ? headFor(template, path, head) : withJsonLd(template, WEBSITE_JSON_LD)
   const page = pageTemplate.replace(APP_DIV, () => `<div id="app" data-ssg-route="${path}">${appHtml}</div>`)
   await mkdir(dirname(join(distDir, file)), { recursive: true })
   await writeFile(join(distDir, file), page)
