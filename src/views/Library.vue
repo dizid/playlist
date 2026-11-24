@@ -161,10 +161,11 @@ const filteredSongs = computed(() => {
         </option>
       </select>
 
-      <!-- Filters toggle button -->
+      <!-- Filters toggle button. focus-visible ring (keyboard only, T-0636): the indigo border alone
+           doesn't show focus while filters are on (the border is indigo already) -->
       <button
         @click="showFilters = !showFilters"
-        class="relative px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white hover:border-zinc-600 focus:outline-none focus:border-indigo-500 cursor-pointer"
+        class="relative px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white hover:border-zinc-600 focus:outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
         :class="{ 'border-indigo-500': showFilters || activeFilterCount > 0 }"
         aria-label="Toggle filters"
       >
@@ -177,11 +178,12 @@ const filteredSongs = computed(() => {
         </span>
       </button>
 
-      <!-- Clear all (shown when filters are active) -->
+      <!-- Clear all (shown when filters are active). It had no focus mark at all; focus-visible ring
+           for keyboard users only, taps look the same (T-0636) -->
       <button
         v-if="activeFilterCount > 0"
         @click="clearFilters"
-        class="px-3 py-2 text-sm text-zinc-400 hover:text-white focus:outline-none cursor-pointer"
+        class="px-3 py-2 text-sm text-zinc-400 hover:text-white rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
         aria-label="Clear all filters"
       >
         Clear all

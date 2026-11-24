@@ -31,6 +31,16 @@ body {
   }
 }
 
+/* Signed in, below 1024px the app has a sticky top bar (57px, Navigation.vue). Moving back up a
+   page with Shift+Tab parked the focused link/button under it (Dashboard, Import). The browser
+   now keeps 72px free at the top when it scrolls focus into view. Only pages with that bar; the
+   landing page and guides have none. (T-0636) */
+@media (max-width: 63.99rem) {
+  html:has(header.sticky) {
+    scroll-padding-top: 4.5rem;
+  }
+}
+
 /* "Reduce motion" setting on the phone/computer: no rise-in, slide or pulse animations
    (landing page reveal, loading skeletons, phone menu slide). (T-0636) */
 @media (prefers-reduced-motion: reduce) {

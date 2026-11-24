@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../services/api'
+import { useDialogFocus } from '../lib/dialogFocus'
 import {
   isPushSupported,
   getPermissionStatus,
@@ -92,6 +93,11 @@ function closeDeleteModal() {
   deleteConfirmation.value = ''
   deleteError.value = ''
 }
+
+// Keyboard (T-0636): focus into the delete box, Tab stays inside, Escape = Cancel, focus back
+// to 'Delete all data' on close
+const deletePanel = ref(null)
+useDialogFocus(deletePanel, closeDeleteModal)
 
 async function confirmDelete() {
   if (deleteConfirmation.value !== 'DELETE') {
@@ -241,15 +247,17 @@ async function confirmDelete() {
     </div>
 
     <!-- Delete Confirmation Modal -->
+    <!-- Overlay scrolls when the box is taller than the screen (phone held sideways: the close
+         button was cut off). m-auto centres the box exactly as before when it fits. (T-0636) -->
     <div
       v-if="showDeleteModal"
-      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black/70 flex overflow-y-auto overscroll-contain z-50 p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Confirm deletion"
       @click.self="closeDeleteModal"
     >
-      <div class="relative bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-md w-full">
+      <div ref="deletePanel" tabindex="-1" class="relative m-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-md w-full focus:outline-none">
         <button
           @click="closeDeleteModal"
           class="absolute top-4 right-4 text-zinc-400 hover:text-white"

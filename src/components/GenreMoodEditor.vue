@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useLibraryStore } from '../stores/library'
+import { useDialogFocus } from '../lib/dialogFocus'
 
 const props = defineProps({
   song: {
@@ -79,11 +80,18 @@ async function save() {
 function cancel() {
   emit('close')
 }
+
+// Keyboard (T-0636): focus into the dialog, Tab stays inside, Escape = Cancel, focus back to
+// the 'edit tags' button on close
+const panel = ref(null)
+useDialogFocus(panel, cancel)
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="tag-editor-title" @click.self="cancel">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md">
+  <!-- Overlay scrolls when the box is taller than the screen (phone held sideways, small phone):
+       Close and Save were cut off before. m-auto centres the box exactly as before when it fits. (T-0636) -->
+  <div class="fixed inset-0 bg-black/70 flex overflow-y-auto overscroll-contain z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="tag-editor-title" @click.self="cancel">
+    <div ref="panel" tabindex="-1" class="m-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md focus:outline-none">
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
         <h2 id="tag-editor-title" class="text-lg font-semibold text-white">Edit Tags</h2>

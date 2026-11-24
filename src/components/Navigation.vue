@@ -24,6 +24,7 @@ const navItems = [
 // Mobile drawer state
 const isDrawerOpen = ref(false)
 const drawerRef = ref(null)
+const menuButtonRef = ref(null)
 
 function toggleDrawer() {
   isDrawerOpen.value = !isDrawerOpen.value
@@ -33,9 +34,22 @@ function closeDrawer() {
   isDrawerOpen.value = false
 }
 
+// Closed by keyboard (Escape, or Enter/Space on the close button): focus goes back to the menu
+// button. Before, it stayed on the hidden drawer, so the next Tab started from the top of the
+// page. Taps (event.detail > 0) keep the old behaviour, so no focus ring shows up. (T-0636)
+function closeDrawerToMenuButton() {
+  closeDrawer()
+  menuButtonRef.value?.focus()
+}
+
+function handleCloseButton(e) {
+  if (e.detail === 0) closeDrawerToMenuButton()
+  else closeDrawer()
+}
+
 function handleEscape(e) {
   if (e.key === 'Escape' && isDrawerOpen.value) {
-    closeDrawer()
+    closeDrawerToMenuButton()
   }
 }
 
@@ -139,6 +153,7 @@ onUnmounted(() => {
   <!-- Mobile header with hamburger -->
   <header class="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 bg-zinc-900 border-b border-zinc-800 lg:hidden">
     <button
+      ref="menuButtonRef"
       @click="toggleDrawer"
       aria-label="Open menu"
       :aria-expanded="isDrawerOpen"
@@ -170,10 +185,12 @@ onUnmounted(() => {
       aria-label="Navigation menu"
       :aria-hidden="!isDrawerOpen"
       :inert="!isDrawerOpen"
-      class="fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 transform transition-transform duration-200 ease-in-out lg:hidden"
+      class="fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto overscroll-contain bg-zinc-900 border-r border-zinc-800 transform transition-transform duration-200 ease-in-out lg:hidden"
       :class="isDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
     >
-      <div class="flex flex-col h-full">
+      <!-- min-h-full + overflow-y-auto on the drawer: on a phone held sideways the drawer was taller
+           than the screen and Sign out was cut off; now it scrolls. Same look when it fits. (T-0636) -->
+      <div class="flex flex-col min-h-full">
         <!-- Drawer header with close button -->
         <div class="flex items-center justify-between px-6 py-5 border-b border-zinc-800">
           <div class="flex items-center gap-2">
@@ -181,7 +198,7 @@ onUnmounted(() => {
             <span class="text-xl font-bold text-white">TuneCraft</span>
           </div>
           <button
-            @click="closeDrawer"
+            @click="handleCloseButton"
             aria-label="Close menu"
             class="p-1 text-zinc-400 hover:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
